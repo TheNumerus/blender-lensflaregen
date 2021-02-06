@@ -62,6 +62,8 @@ class FlareSettingsPanel(bpy.types.Panel):
         col = layout.column(align=True)
         col.prop(props, 'flare_size', text='Size')
         col = layout.column(align=True)
+        col.prop(props, 'flare_intensity', text='Intensity')
+        col = layout.column(align=True)
         col.prop(props, 'flare_rays', text='Rays')
 
 
@@ -125,71 +127,134 @@ class CameraOverridePanel(bpy.types.Panel):
         col.prop(props, 'rotation', text='Rotation')
 
 
+class MiscPanel(bpy.types.Panel):
+    bl_label = "Miscellaneous Settings"
+    bl_idname = "LF_PT_MiscSettings"
+    bl_space_type = 'NODE_EDITOR'
+    bl_region_type = 'UI'
+    bl_category = 'Lens Flares'
+    bl_parent_id = "LF_PT_MainSettings"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        props = context.scene.lens_flare_props
+
+        col = layout.column(align=True)
+        col.prop(props, 'debug_pos', text='Debug Cross')
+
+
 class RenderLensFlareOperator(bpy.types.Operator):
     bl_label = "Render Lens Flare"
     bl_idname = "render.lens_flare_render"
     bl_description = "Renders lens flare into selected image"
 
-    def execute(self, context):
+    def camera_settings(self, context):
+        """
+        Returns camera aperture shape and rotation from active camera, or from override
+        :return: blades, rotation
+        """
         props: LensFlareProperties = context.scene.lens_flare_props
-
-        blades = props.blades
-        rotation = props.rotation
 
         # get camera settings from active camera if no override
         if not props.use_override:
             camera = bpy.context.scene.camera
             if camera is None:
-                self.report({'ERROR_INVALID_INPUT'}, "No camera is active")
-                return {'CANCELLED'}
+                raise Exception("No camera is active")
             camera = bpy.data.cameras[camera.name]
 
-            blades = camera.dof.aperture_blades
-            rotation = camera.dof.aperture_rotation
+            return camera.dof.aperture_blades, camera.dof.aperture_rotation
 
-        print(blades, rotation)
+        return props.blades, props.rotation
+
+    def draw_debug_cross(self, props):
+        cross_color = [2.0, 0.0, 2.0, 1.0]
+        thickness = 1
+        length = 10
+
+        max_x, max_y = props.image.size
+
+        center_x = int(max_x * props.posx)
+        center_y = int(max_y * props.posy)
+
+        buffer = [0.0 for x in range(max_x * max_y * 4)]
+
+        # draw horizontal line
+        for y in range(max(center_y - thickness, 0), min(center_y + thickness, max_y)):
+            for x in range(max(center_x - length, 0), min(center_x + length, max_x)):
+                index = (x + y * max_x) * 4
+                buffer[index:index+4] = cross_color
+
+        # draw vertical line
+        for y in range(max(center_y - length, 0), min(center_y + length, max_y)):
+            for x in range(max(center_x - thickness, 0), min(center_x + thickness, max_x)):
+                index = (x + y * max_x) * 4
+                buffer[index:index+4] = cross_color
+
+        props.image.pixels[:] = buffer
+
+    def execute(self, context):
+        props: LensFlareProperties = context.scene.lens_flare_props
 
         start_time = time.perf_counter()
+
+        try:
+            blades, rotation = self.camera_settings(context)
+        except Exception as e:
+            self.report({'ERROR_INVALID_INPUT'}, e.args[0])
+            return {'CANCELLED'}
 
         # don't render if the is no valid output
         if props.image is None:
             self.report({'ERROR_INVALID_INPUT'}, "No image selected")
             return {'CANCELLED'}
-        max_x, max_y = props.image.size
 
-        buffer = np.array(props.image.pixels)
-        res_buffer = np.reshape(buffer, (-1, 4))
+        if props.debug_pos:
+            self.draw_debug_cross(props)
+        else:
+            # TODO move somewhere else
+            max_x, max_y = props.image.size
 
-        color = props.flare_color
-        center_x = max_x / 2
-        center_y = max_y / 2
+            res_buffer = np.full(shape=(max_x * max_y, 4), fill_value=1.0)
 
-        ratio = max_x / max_y
+            color = props.flare_color
+            center_x = max_x / 2
+            center_y = max_y / 2
 
-        flare_x = props.posx * max_x
-        flare_y = props.posy * max_y
+            ratio = max_x / max_y
 
-        for i, pixel in enumerate(res_buffer):
-            x = i % max_x
-            y = i // max_x
-            value = image_processing.compute_flare_intensity(x, y, max_x, max_y, props, ratio)
-            pixel[0] = color[0] * value
-            pixel[1] = color[1] * value
-            pixel[2] = color[2] * value
+            flare_x = props.posx * max_x
+            flare_y = props.posy * max_y
 
-            for ghost in props.ghosts:
-                ghost_x = center_x + (flare_x - center_x) * ghost.offset
-                ghost_y = center_y + (flare_y - center_y) * ghost.offset
+            render_start = time.perf_counter()
 
-                value = min(max((ghost.size * 100) - ((x - ghost_x) ** 2 + (y - ghost_y) ** 2), 0.0), 1.0)
+            for i, pixel in enumerate(res_buffer):
+                x = i % max_x
+                y = i // max_x
 
-                pixel[0] += ghost.color[0] * value
-                pixel[1] += ghost.color[1] * value
-                pixel[2] += ghost.color[2] * value
+                value = image_processing.compute_flare_intensity(x, y, max_x, max_y, props, ratio)
+                pixel[0] = color[0] * value * props.flare_intensity
+                pixel[1] = color[1] * value * props.flare_intensity
+                pixel[2] = color[2] * value * props.flare_intensity
 
-        buffer = np.reshape(res_buffer, (-1))
+                for ghost in props.ghosts:
+                    ghost_x = center_x + (flare_x - center_x) * ghost.offset
+                    ghost_y = center_y + (flare_y - center_y) * ghost.offset
 
-        props.image.pixels = list(buffer)
+                    # TODO this is stupid and has too sharp edges, not even polygonal
+                    value = min(max((ghost.size * 100) - ((x - ghost_x) ** 2 + (y - ghost_y) ** 2), 0.0), 1.0)
+
+                    pixel[0] += ghost.color[0] * value
+                    pixel[1] += ghost.color[1] * value
+                    pixel[2] += ghost.color[2] * value
+
+            self.report({'INFO'}, f"Lens flare only render loop time: {time.perf_counter() - render_start}")
+
+            buffer = np.reshape(res_buffer, (-1))
+
+            props.image.pixels = list(buffer)
+
         props.image.update()
 
         # force compositing refresh
@@ -197,7 +262,7 @@ class RenderLensFlareOperator(bpy.types.Operator):
 
         end_time = time.perf_counter()
 
-        self.report({'INFO'}, f"Lens flare render time: {end_time - start_time}")
+        self.report({'INFO'}, f"Lens flare total render time: {end_time - start_time}")
 
         return {'FINISHED'}
 
@@ -267,7 +332,9 @@ class LensFlareProperties(bpy.types.PropertyGroup):
     flare_color: bpy.props.FloatVectorProperty(name="Flare Color", description="Color of the main flare", subtype='COLOR_GAMMA', default=[0.9, 0.9, 0.9], size=3, min=0.0, soft_max=1.0)
     flare_size: bpy.props.FloatProperty(name="Flare Size", description="Flare size relative to image size", default=0.5)
     flare_rays: bpy.props.BoolProperty(name="Flare Rays", description="Render rays coming from light source", default=False)
+    flare_intensity: bpy.props.FloatProperty(name="Flare Intensity", default=1.0)
     ghosts: bpy.props.CollectionProperty(name="Ghosts", type=LensFlareGhostPropertyGroup)
+    debug_pos: bpy.props.BoolProperty(name="Debug Cross", description="Render only cross with position", default=False)
 
 
 _classes = [
@@ -279,6 +346,7 @@ _classes = [
     FlareSettingsPanel,
     GhostsPanel,
     CameraOverridePanel,
+    MiscPanel,
     # operators
     RenderLensFlareOperator,
     AddGhostOperator,
