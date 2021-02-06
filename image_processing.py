@@ -1,5 +1,6 @@
 import math
 
+
 def compute_flare_intensity(x, y, max_x, max_y, props, ratio):
     delta_x = (x / max_x) - props.posx
     delta_y = (y / max_y) - props.posy

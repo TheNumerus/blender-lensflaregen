@@ -1,4 +1,7 @@
+import time
+
 import bpy
+
 import numpy as np
 from . import image_processing
 
@@ -12,7 +15,7 @@ bl_info = {
     "blender": (2, 91, 0),
     "category": "Node",
     "author": "Petr Volf",
-    "version": (0,1,0),
+    "version": (0, 1, 0),
     "warning": "Work in Progress version",
 }
 
@@ -33,11 +36,12 @@ class MainSettingsPanel(bpy.types.Panel):
         row.prop(props, 'image')
 
         row = layout.row()
-        row.operator('node.lens_flare_render')
+        row.operator('render.lens_flare_render')
 
         row = layout.row()
         row.prop(props, "posx")
         row.prop(props, "posy")
+
 
 class FlareSettingsPanel(bpy.types.Panel):
     bl_label = "Flare"
@@ -58,6 +62,7 @@ class FlareSettingsPanel(bpy.types.Panel):
         col = layout.column(align=True)
         col.prop(props, 'flare_size', text='Flare Size')
 
+
 class GhostsPanel(bpy.types.Panel):
     bl_label = "Ghosts"
     bl_idname = "LF_PT_Ghosts"
@@ -74,18 +79,20 @@ class GhostsPanel(bpy.types.Panel):
         props = context.scene.lens_flare_props
 
         row = layout.row()
-        row.operator('node.add_ghost')
+        row.operator('lens_flare.add_ghost')
 
         row = layout.row()
 
-        for ghost in props.ghosts:
+        for i, ghost in enumerate(props.ghosts):
             box = layout.box()
             row = box.row(align=True)
 
             row.prop(ghost, 'offset')
             row.prop(ghost, 'color', text='')
             row.prop(ghost, 'size')
-            row.operator('object.select_all', text='', icon='X')
+            remove_op = row.operator('lens_flare.remove_ghost', text='', icon='X')
+            remove_op.remove_id = i
+
 
 class CameraOverridePanel(bpy.types.Panel):
     bl_label = "Camera Override"
@@ -100,9 +107,9 @@ class CameraOverridePanel(bpy.types.Panel):
         layout = self.layout
         layout.prop(context.scene.lens_flare_props, 'use_override', text='')
 
-    @classmethod
-    def poll(cls, context):
-        return (context.object is not None)
+    # @classmethod
+    # def poll(cls, context):
+    #    return (context.object is not None)
 
     def draw(self, context):
         layout = self.layout
@@ -118,11 +125,13 @@ class CameraOverridePanel(bpy.types.Panel):
 
 class RenderLensFlareOperator(bpy.types.Operator):
     bl_label = "Render Lens Flare"
-    bl_idname = "node.lens_flare_render"
+    bl_idname = "render.lens_flare_render"
     bl_description = "Renders lens flare into selected image"
 
     def execute(self, context):
         props: LensFlareProperties = context.scene.lens_flare_props
+
+        start_time = time.perf_counter()
 
         # don't render if the is no valid output
         if props.image is None:
@@ -168,12 +177,16 @@ class RenderLensFlareOperator(bpy.types.Operator):
         # force compositing refresh
         bpy.ops.render.render(write_still=True)
 
+        end_time = time.perf_counter()
+
+        self.report({'INFO'}, f"Lens flare render time: {end_time - start_time}")
+
         return {'FINISHED'}
 
 
 class AddGhostOperator(bpy.types.Operator):
     bl_label = "Create new ghost"
-    bl_idname = "node.add_ghost"
+    bl_idname = "lens_flare.add_ghost"
     bl_description = "Creates new ghost"
 
     def execute(self, context):
@@ -184,9 +197,28 @@ class AddGhostOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class RemoveGhostOperator(bpy.types.Operator):
+    bl_label = "Deletes ghost"
+    bl_idname = "lens_flare.remove_ghost"
+    bl_description = "Creates new ghost"
+
+    remove_id: bpy.props.IntProperty(default=-1, description="Index of ghost to remove")
+
+    def execute(self, context):
+        props: LensFlareProperties = context.scene.lens_flare_props
+
+        if self.remove_id == -1:
+            self.report({'ERROR_INVALID_INPUT'}, "Invalid ID of ghost to delete")
+            return {'CANCELLED'}
+
+        props.ghosts.remove(self.remove_id)
+
+        return {'FINISHED'}
+
+
 class LensFlareGhostPropertyGroup(bpy.types.PropertyGroup):
     offset: bpy.props.FloatProperty(name="Offset", description="Ghost offset", default=0.0)
-    color: bpy.props.FloatVectorProperty(name="Color", description="Ghost color", subtype='COLOR_GAMMA', default=[0.9, 0.9, 0.9, 1.0], size=4)
+    color: bpy.props.FloatVectorProperty(name="Color", description="Ghost color", subtype='COLOR_GAMMA', default=[0.9, 0.9, 0.9], size=3, min=0.0, soft_max=1.0)
     size: bpy.props.FloatProperty(name="Size", description="Ghost Size", default=0.5)
 
 
@@ -197,7 +229,7 @@ class LensFlareProperties(bpy.types.PropertyGroup):
     use_override: bpy.props.BoolProperty(name="Camera Override", description="Use custom camera properties", default=False)
     blades: bpy.props.IntProperty(name="Aperture Blades", description="Number of blades in aperture for polygonal bokeh (at least 3)", default=6, min=3)
     rotation: bpy.props.FloatProperty(name="Aperture Rotation", description="Rotation of blades in aperture", default=0, subtype='ANGLE', unit='ROTATION')
-    flare_color: bpy.props.FloatVectorProperty(name="Flare Color", description="Color of the main flare", subtype='COLOR_GAMMA', default=[0.9, 0.9, 0.9, 1.0], size=4)
+    flare_color: bpy.props.FloatVectorProperty(name="Flare Color", description="Color of the main flare", subtype='COLOR_GAMMA', default=[0.9, 0.9, 0.9], size=3, min=0.0, soft_max=1.0)
     flare_size: bpy.props.FloatProperty(name="Flare Size", description="Flare size relative to image size", default=0.5)
     ghosts: bpy.props.CollectionProperty(name="Ghosts", type=LensFlareGhostPropertyGroup)
 
@@ -213,7 +245,8 @@ _classes = [
     CameraOverridePanel,
     # operators
     RenderLensFlareOperator,
-    AddGhostOperator
+    AddGhostOperator,
+    RemoveGhostOperator
 ]
 
 
