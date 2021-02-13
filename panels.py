@@ -10,18 +10,27 @@ class MainSettingsPanel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
 
         props = context.scene.lens_flare_props
-
-        row = layout.row()
-        row.prop(props, 'image')
 
         row = layout.row()
         row.operator('render.lens_flare_render')
 
         row = layout.row()
-        row.prop(props, "posx")
-        row.prop(props, "posy")
+        row.operator('render.ghost_ogl_render')
+
+        row = layout.row()
+        row.prop(props, 'image')
+
+        col = layout.column(align=True)
+        col.prop(props, "resolution_x", text="Resolution X")
+        col.prop(props, "resolution_y", text="Y")
+
+        col = layout.column(align=True)
+        col.prop(props, "posx", text="Effect Position X")
+        col.prop(props, "posy", text="Y")
 
 
 class FlareSettingsPanel(bpy.types.Panel):
@@ -60,13 +69,17 @@ class GhostsPanel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
+        layout.use_property_split = True
 
         props = context.scene.lens_flare_props
 
         row = layout.row()
         row.operator('lens_flare.add_ghost')
 
-        row = layout.row()
+        col = layout.column(align=True)
+        col.prop(props, "ghosts_empty_center", text="Transparent Centers")
+
+        layout.use_property_split = False
 
         for i, ghost in enumerate(props.ghosts):
             box = layout.box()
