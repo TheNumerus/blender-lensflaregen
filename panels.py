@@ -16,10 +16,7 @@ class MainSettingsPanel(bpy.types.Panel):
         props = context.scene.lens_flare_props
 
         row = layout.row()
-        row.operator('render.lens_flare_render')
-
-        row = layout.row()
-        row.operator('render.ghost_ogl_render')
+        row.operator('render.lens_flare_ogl_render')
 
         row = layout.row()
         row.prop(props, 'image')

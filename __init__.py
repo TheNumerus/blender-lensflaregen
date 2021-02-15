@@ -34,7 +34,6 @@ _classes = [
     panels.CameraOverridePanel,
     panels.MiscPanel,
     # operators
-    operators.RenderLensFlareOperator,
     operators.AddGhostOperator,
     operators.RemoveGhostOperator,
     operators.OGLRenderOperator

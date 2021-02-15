@@ -44,9 +44,9 @@ class RemoveGhostOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class RenderLensFlareOperator(bpy.types.Operator):
+class OGLRenderOperator(bpy.types.Operator):
     bl_label = "Render Lens Flare"
-    bl_idname = "render.lens_flare_render"
+    bl_idname = "render.lens_flare_ogl_render"
     bl_description = "Renders lens flare into selected image"
 
     def execute(self, context):
@@ -54,95 +54,27 @@ class RenderLensFlareOperator(bpy.types.Operator):
 
         start_time = time.perf_counter()
 
+        if props.image is None:
+            self.report({'ERROR_INVALID_INPUT'}, "No image selected")
+            return {'CANCELLED'}
+
         try:
             blades, rotation = camera_settings(context)
         except Exception as e:
             self.report({'ERROR_INVALID_INPUT'}, e.args[0])
             return {'CANCELLED'}
 
-        # don't render if the is no valid output
-        if props.image is None:
-            self.report({'ERROR_INVALID_INPUT'}, "No image selected")
-            return {'CANCELLED'}
-
+        # handle debug cross
         if props.debug_pos:
             image_processing.draw_debug_cross(props)
-        else:
-            # TODO move somewhere else
-            max_x = props.resolution_x
-            max_y = props.resolution_y
 
-            res_buffer = np.full(shape=(max_x * max_y, 4), fill_value=1.0)
+            # force compositing refresh
+            bpy.ops.render.render(write_still=True)
 
-            color = props.flare_color
-            center_x = max_x / 2
-            center_y = max_y / 2
+            end_time = time.perf_counter()
+            self.report({'INFO'}, f"Lens flare total render time: {end_time - start_time}")
 
-            ratio = max_x / max_y
-
-            flare_x = props.posx * max_x
-            flare_y = props.posy * max_y
-
-            render_start = time.perf_counter()
-
-            for i, pixel in enumerate(res_buffer):
-                x = i % max_x
-                y = i // max_x
-
-                value = image_processing.compute_flare_intensity(x, y, max_x, max_y, props, ratio)
-                pixel[0] = color[0] * value * props.flare_intensity
-                pixel[1] = color[1] * value * props.flare_intensity
-                pixel[2] = color[2] * value * props.flare_intensity
-
-                for ghost in props.ghosts:
-                    ghost_x = center_x + (flare_x - center_x) * ghost.offset
-                    ghost_y = center_y + (flare_y - center_y) * ghost.offset
-
-                    # TODO this is stupid and has too sharp edges, not even polygonal
-                    value = min(max((ghost.size * 100) - ((x - ghost_x) ** 2 + (y - ghost_y) ** 2), 0.0), 1.0)
-
-                    pixel[0] += ghost.color[0] * value
-                    pixel[1] += ghost.color[1] * value
-                    pixel[2] += ghost.color[2] * value
-
-            self.report({'INFO'}, f"Lens flare only render loop time: {time.perf_counter() - render_start}")
-
-            buffer = np.reshape(res_buffer, (-1))
-
-            props.image.scale(max_x, max_y)
-            props.image.pixels = list(buffer)
-
-        props.image.update()
-
-        # force compositing refresh
-        bpy.ops.render.render(write_still=True)
-
-        end_time = time.perf_counter()
-
-        self.report({'INFO'}, f"Lens flare total render time: {end_time - start_time}")
-
-        return {'FINISHED'}
-
-
-class OGLRenderOperator(bpy.types.Operator):
-    bl_label = "Render Ghost With OpenGL"
-    bl_idname = "render.ghost_ogl_render"
-    bl_description = "Renders lens flare ghost into selected image"
-
-    def execute(self, context):
-        props: LensFlareProperties = context.scene.lens_flare_props
-
-        start_time = time.perf_counter()
-
-        if props.image is None:
-            self.report({'ERROR_INVALID_INPUT'}, "No image selected")
-            return {'CANCELLED'}
-
-        try:
-            blades, rotation = camera_settings(context)
-        except Exception as e:
-            self.report({'ERROR_INVALID_INPUT'}, e.args[0])
-            return {'CANCELLED'}
+            return {'FINISHED'}
 
         max_x = props.resolution_x
         max_y = props.resolution_y
