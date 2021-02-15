@@ -1,3 +1,4 @@
+# language=GLSL
 vertex_shader_ghost = '''
     uniform mat4 modelMatrix;
     uniform mat4 rotationMatrix;
@@ -17,6 +18,7 @@ vertex_shader_ghost = '''
     }
 '''
 
+# language=GLSL
 vertex_shader_quad = '''
     in vec2 position;
     in vec2 uv;
@@ -29,7 +31,9 @@ vertex_shader_quad = '''
     }
 '''
 
+# language=GLSL
 fragment_shader_ghost = '''
+    #define E 2.71828
     uniform vec4 color;
     uniform float empty;
 
@@ -40,27 +44,60 @@ fragment_shader_ghost = '''
 
     void main() {
         float center = sqrt(pow(posInterp.x, 2.0) + pow(posInterp.y, 2.0));
-        float gauss = 0.4 * pow(2.7, -(pow(center, 2.0) / 0.3));
+        float gauss = 0.4 * pow(E, -(pow(center, 2.0) / 0.3));
         float edge = (1.0 - pow(colorInterp.x, 40.0)) - (gauss * empty);
         FragColor = color * edge;
     }
 '''
 
+# language=GLSL
 fragment_shader_flare = '''
+    #define E 2.71828
+    #define PI 3.14159
+    
     uniform vec4 color;
     uniform float size;
     uniform float intensity;
     uniform vec2 flare_position;
     uniform float aspect_ratio;
+    uniform float blades;
+    uniform float use_rays;
+    uniform float rotation;
 
     in vec2 uvInterp;
 
     out vec4 FragColor;
+    
+    float rays(float distance, float norm_angle) {
+        float angle = fract(norm_angle * blades);
+        float ray_centers = 1.0 - abs(angle * 2.0 - 1.0);
+        ray_centers = pow(ray_centers, distance * 40.0) * max(1.0 - distance, 0.0);
+        
+        float rays_center = 2.0 * pow(E, -(pow(distance, 2.0) / 0.02));
+        
+        return (ray_centers + rays_center) * use_rays;
+    }
 
     void main() {
         vec2 flare_base = uvInterp - flare_position;
         float dist = sqrt( pow(flare_base.x * aspect_ratio, 2.0) + pow(flare_base.y, 2.0) ); // [0.0; 1.0]
-        float flare = max((size/ 100.0) - dist, 0.0) * (100.0 / size);
-        FragColor = vec4(flare, flare, flare, 1.0) * color * intensity;
+        
+        // use gauss function
+        float flare = intensity * pow(E, -(pow(dist, 2.0) / (size / 100.0)));
+        
+        // angle component of polar coordinates
+        float angle = acos(flare_base.x * aspect_ratio / dist);
+        if (flare_base.y < 0.0) {
+            angle = -acos(flare_base.x * aspect_ratio / dist);
+        }
+        
+        // normalize
+        angle = ((angle + rotation) / (2.0 * PI));
+        
+        float rays_value = rays(dist, angle);
+        
+        float sum = flare + rays_value;
+        
+        FragColor = vec4(sum, sum, sum, 1.0) * color * intensity;
     }
 '''

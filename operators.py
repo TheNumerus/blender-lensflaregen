@@ -106,6 +106,9 @@ class OGLRenderOperator(bpy.types.Operator):
                 # render glare
                 flare_color = Vector((props.flare_color[0], props.flare_color[1], props.flare_color[2], 1.0))
                 flare_position = Vector((props.posx, props.posy))
+                flare_rays = 0.0
+                if props.flare_rays:
+                    flare_rays = 1.0
                 flare_shader.bind()
 
                 flare_shader.uniform_float("color", flare_color)
@@ -113,6 +116,9 @@ class OGLRenderOperator(bpy.types.Operator):
                 flare_shader.uniform_float("intensity", props.flare_intensity)
                 flare_shader.uniform_float("flare_position", flare_position)
                 flare_shader.uniform_float("aspect_ratio", ratio)
+                flare_shader.uniform_float("blades", float(blades))
+                flare_shader.uniform_float("use_rays", flare_rays)
+                flare_shader.uniform_float("rotation", props.rotation)
 
                 flare_batch.draw(flare_shader)
 
@@ -140,14 +146,14 @@ class OGLRenderOperator(bpy.types.Operator):
                     ghost_batch.draw(ghost_shader)
 
             # copy rendered image to RAM
-            buffer = bgl.Buffer(bgl.GL_BYTE, max_x * max_y * 4)
+            buffer = bgl.Buffer(bgl.GL_FLOAT, max_x * max_y * 4)
             bgl.glReadBuffer(bgl.GL_BACK)
-            bgl.glReadPixels(0, 0, max_x, max_y, bgl.GL_RGBA, bgl.GL_UNSIGNED_BYTE, buffer)
+            bgl.glReadPixels(0, 0, max_x, max_y, bgl.GL_RGBA, bgl.GL_FLOAT, buffer)
 
         offscreen.free()
 
         props.image.scale(max_x, max_y)
-        props.image.pixels = [v / 255 for v in buffer]
+        props.image.pixels = [v for v in buffer]
 
         end_time = time.perf_counter()
         self.report({'INFO'}, f"Lens flare total render time: {end_time - start_time}")
