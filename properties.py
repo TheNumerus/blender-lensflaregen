@@ -9,7 +9,7 @@ class LensFlareGhostPropertyGroup(bpy.types.PropertyGroup):
 
 def get_blades(self):
     if 'blades' not in self:
-        self['blades'] = LensFlareProperties.blades.default
+        self['blades'] = 0
     return self['blades']
 
 
@@ -34,7 +34,7 @@ class LensFlareProperties(bpy.types.PropertyGroup):
     blades: bpy.props.IntProperty(name="Aperture Blades", description="Number of blades in aperture for polygonal bokeh (at least 3)", default=0, min=0, max=16, get=get_blades, set=set_blades)
     rotation: bpy.props.FloatProperty(name="Aperture Rotation", description="Rotation of blades in aperture", default=0, subtype='ANGLE', unit='ROTATION', min=-3.14159, max=3.14159)
     flare_color: bpy.props.FloatVectorProperty(name="Flare Color", description="Color of the main flare", subtype='COLOR_GAMMA', default=[0.9, 0.9, 0.9], size=3, min=0.0, soft_max=1.0)
-    flare_size: bpy.props.FloatProperty(name="Flare Size", description="Flare size relative to image size", default=0.5)
+    flare_size: bpy.props.FloatProperty(name="Flare Size", description="Flare size relative to image size", default=10.0)
     flare_rays: bpy.props.BoolProperty(name="Flare Rays", description="Render rays coming from light source", default=False)
     flare_intensity: bpy.props.FloatProperty(name="Flare Intensity", default=1.0)
     ghosts: bpy.props.CollectionProperty(name="Ghosts", type=LensFlareGhostPropertyGroup)

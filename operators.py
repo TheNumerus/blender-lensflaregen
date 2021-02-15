@@ -154,8 +154,11 @@ class OGLRenderOperator(bpy.types.Operator):
 
         offscreen = gpu.types.GPUOffScreen(max_x, max_y)
 
-        shader = gpu.types.GPUShader(_vertex_shader_ghost, _fragment_shader_ghost)
-        ghost_batch = batch_from_blades(blades, shader)
+        ghost_shader = gpu.types.GPUShader(_vertex_shader_ghost, _fragment_shader_ghost)
+        ghost_batch = batch_from_blades(blades, ghost_shader)
+
+        flare_shader = gpu.types.GPUShader(_vertex_shader_quad, _fragment_shader_flare)
+        flare_batch = batch_quad(flare_shader)
 
         with offscreen.bind():
             # black background
@@ -169,30 +172,43 @@ class OGLRenderOperator(bpy.types.Operator):
                 gpu.matrix.load_matrix(Matrix.Identity(4))
                 gpu.matrix.load_projection_matrix(Matrix.Identity(4))
 
-                # TODO render glare
+                # render glare
+                flare_color = Vector((props.flare_color[0], props.flare_color[1], props.flare_color[2], 1.0))
+                flare_position = Vector((props.posx, props.posy))
+                flare_shader.bind()
 
-                shader.bind()
+                flare_shader.uniform_float("color", flare_color)
+                flare_shader.uniform_float("size", props.flare_size)
+                flare_shader.uniform_float("intensity", props.flare_intensity)
+                flare_shader.uniform_float("flare_position", flare_position)
+                flare_shader.uniform_float("aspect_ratio", ratio)
+
+                flare_batch.draw(flare_shader)
+
+                # draw ghosts
+                ghost_shader.bind()
                 # fix aspect ratio
-                shader.uniform_float("aspect_ratio", ratio)
+                ghost_shader.uniform_float("aspect_ratio", ratio)
                 for ghost in props.ghosts:
 
                     ghost_x = ((props.posx - 0.5) * 2.0) * ghost.offset
                     ghost_y = ((props.posy - 0.5) * 2.0) * ghost.offset
                     # move and scale ghosts
-                    shader.uniform_float("modelMatrix", Matrix.Translation((ghost_x, ghost_y, 0.0)) @ Matrix.Scale(ghost.size / 100, 4))
+                    ghost_shader.uniform_float("modelMatrix", Matrix.Translation((ghost_x, ghost_y, 0.0)) @ Matrix.Scale(ghost.size / 100, 4))
                     # rotate ghost
-                    shader.uniform_float("rotationMatrix", Matrix.Rotation(rotation, 4, 'Z'))
+                    ghost_shader.uniform_float("rotationMatrix", Matrix.Rotation(rotation, 4, 'Z'))
                     # set color
-                    shader.uniform_float("color", Vector((ghost.color[0], ghost.color[1], ghost.color[2], 1)))
+                    ghost_shader.uniform_float("color", Vector((ghost.color[0], ghost.color[1], ghost.color[2], 1)))
 
                     # set centers
                     if props.ghosts_empty_center:
-                        shader.uniform_float("empty", 1.0)
+                        ghost_shader.uniform_float("empty", 1.0)
                     else:
-                        shader.uniform_float("empty", 0.0)
+                        ghost_shader.uniform_float("empty", 0.0)
 
-                    ghost_batch.draw(shader)
+                    ghost_batch.draw(ghost_shader)
 
+            # copy rendered image to RAM
             buffer = bgl.Buffer(bgl.GL_BYTE, max_x * max_y * 4)
             bgl.glReadBuffer(bgl.GL_BACK)
             bgl.glReadPixels(0, 0, max_x, max_y, bgl.GL_RGBA, bgl.GL_UNSIGNED_BYTE, buffer)
@@ -247,6 +263,13 @@ def batch_from_blades(blades: int, shader):
     return batch_for_shader(shader, 'TRI_FAN', {"position": tuple(positions), "vertColor": tuple(colors)})
 
 
+def batch_quad(shader):
+    positions = [(-1.0, -1.0), (-1.0, 1.0), (1.0, -1.0), (1.0, 1.0)]
+    uv = [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0)]
+
+    return batch_for_shader(shader, 'TRI_STRIP', {"position": tuple(positions), "uv": tuple(uv)})
+
+
 # shader strings
 _vertex_shader_ghost = '''
     uniform mat4 modelMatrix;
@@ -267,6 +290,18 @@ _vertex_shader_ghost = '''
     }
 '''
 
+_vertex_shader_quad = '''
+    in vec2 position;
+    in vec2 uv;
+
+    out vec2 uvInterp;
+
+    void main() {
+        uvInterp = uv;
+        gl_Position = vec4(position, 0.0, 1.0);
+    }
+'''
+
 _fragment_shader_ghost = '''
     uniform vec4 color;
     uniform float empty;
@@ -280,6 +315,25 @@ _fragment_shader_ghost = '''
         float center = sqrt(pow(posInterp.x, 2.0) + pow(posInterp.y, 2.0));
         float gauss = 0.4 * pow(2.7, -(pow(center, 2.0) / 0.3));
         float edge = (1.0 - pow(colorInterp.x, 40.0)) - (gauss * empty);
-        FragColor = vec4(posInterp, 0.0, 1.0) * 0.05 + color * edge;
+        FragColor = color * edge;
+    }
+'''
+
+_fragment_shader_flare = '''
+    uniform vec4 color;
+    uniform float size;
+    uniform float intensity;
+    uniform vec2 flare_position;
+    uniform float aspect_ratio;
+
+    in vec2 uvInterp;
+
+    out vec4 FragColor;
+
+    void main() {
+        vec2 flare_base = uvInterp - flare_position;
+        float dist = sqrt( pow(flare_base.x * aspect_ratio, 2.0) + pow(flare_base.y, 2.0) ); // [0.0; 1.0]
+        float flare = max((size/ 100.0) - dist, 0.0) * (100.0 / size);
+        FragColor = vec4(flare, flare, flare, 1.0) * color * intensity;
     }
 '''
