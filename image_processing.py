@@ -1,5 +1,3 @@
-import math
-
 def draw_debug_cross(props):
     cross_color = [2.0, 0.0, 2.0, 1.0]
     thickness = 1
