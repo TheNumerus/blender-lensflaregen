@@ -118,7 +118,7 @@ class OGLRenderOperator(bpy.types.Operator):
                 flare_shader.uniform_float("aspect_ratio", ratio)
                 flare_shader.uniform_float("blades", float(blades))
                 flare_shader.uniform_float("use_rays", flare_rays)
-                flare_shader.uniform_float("rotation", props.rotation)
+                flare_shader.uniform_float("rotation", rotation)
 
                 flare_batch.draw(flare_shader)
 

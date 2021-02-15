@@ -68,12 +68,16 @@ fragment_shader_flare = '''
 
     out vec4 FragColor;
     
+    float gauss(float x, float center, float std_dev) {
+        return pow(E, -(pow(x - center, 2.0) / std_dev));
+    }
+    
     float rays(float distance, float norm_angle) {
         float angle = fract(norm_angle * blades);
         float ray_centers = 1.0 - abs(angle * 2.0 - 1.0);
         ray_centers = pow(ray_centers, distance * 40.0) * max(1.0 - distance, 0.0);
         
-        float rays_center = 2.0 * pow(E, -(pow(distance, 2.0) / 0.02));
+        float rays_center = 2.0 * gauss(distance, 0.0, 0.02);
         
         return (ray_centers + rays_center) * use_rays;
     }
@@ -82,8 +86,7 @@ fragment_shader_flare = '''
         vec2 flare_base = uvInterp - flare_position;
         float dist = sqrt( pow(flare_base.x * aspect_ratio, 2.0) + pow(flare_base.y, 2.0) ); // [0.0; 1.0]
         
-        // use gauss function
-        float flare = intensity * pow(E, -(pow(dist, 2.0) / (size / 100.0)));
+        float flare = intensity * gauss(dist, 0.0, size / 100.0);
         
         // angle component of polar coordinates
         float angle = acos(flare_base.x * aspect_ratio / dist);
