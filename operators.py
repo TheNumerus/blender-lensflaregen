@@ -68,11 +68,10 @@ class OGLRenderOperator(bpy.types.Operator):
         if props.debug_pos:
             image_processing.draw_debug_cross(props)
 
-            # force compositing refresh
-            bpy.ops.render.render(write_still=True)
-
             end_time = time.perf_counter()
             self.report({'INFO'}, f"Lens flare total render time: {end_time - start_time}")
+
+            refresh_compositor()
 
             return {'FINISHED'}
 
@@ -150,12 +149,10 @@ class OGLRenderOperator(bpy.types.Operator):
         props.image.scale(max_x, max_y)
         props.image.pixels = [v / 255 for v in buffer]
 
-        # force compositing refresh
-        bpy.ops.render.render(write_still=True)
-
         end_time = time.perf_counter()
-
         self.report({'INFO'}, f"Lens flare total render time: {end_time - start_time}")
+
+        refresh_compositor()
 
         return {'FINISHED'}
 
@@ -200,3 +197,12 @@ def batch_quad(shader):
     uv = [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0)]
 
     return batch_for_shader(shader, 'TRI_STRIP', {"position": tuple(positions), "uv": tuple(uv)})
+
+
+def refresh_compositor():
+    """
+    Quick and dirty way to refresh compositor. Adds new node and immediately removes it.
+    """
+    tree = bpy.context.scene.node_tree
+    node = tree.nodes.new(type='CompositorNodeRGB')
+    tree.nodes.remove(node)
