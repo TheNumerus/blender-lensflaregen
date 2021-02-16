@@ -30,6 +30,7 @@ class LensFlareProperties(bpy.types.PropertyGroup):
     resolution_x: bpy.props.IntProperty(name="Resolution X", description="Number of horizontal pixels in rendered effect", default=1280, min=0)
     resolution_y: bpy.props.IntProperty(name="Resolution Y", description="Number of vertical pixels in rendered effect", default=720, min=0)
     image: bpy.props.PointerProperty(name="Image", type=bpy.types.Image, description="Image to render to")
+    master_intensity: bpy.props.FloatProperty(name="Master Intensity", description="Scales total effect intensity", default=1.0)
     use_override: bpy.props.BoolProperty(name="Camera Override", description="Use custom camera properties", default=True)
     blades: bpy.props.IntProperty(name="Aperture Blades", description="Number of blades in aperture for polygonal bokeh (at least 3)", default=0, min=0, max=16, get=get_blades, set=set_blades)
     rotation: bpy.props.FloatProperty(name="Aperture Rotation", description="Rotation of blades in aperture", default=0, subtype='ANGLE', unit='ROTATION', min=-3.14159, max=3.14159)

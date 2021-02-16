@@ -16,10 +16,11 @@ class MainSettingsPanel(bpy.types.Panel):
         props = context.scene.lens_flare_props
 
         row = layout.row()
-        row.operator('render.lens_flare_ogl_render')
+        row.operator('render.lens_flare_ogl_render', icon='RENDER_STILL')
 
         row = layout.row()
         row.prop(props, 'image')
+        row.operator('image.new', text='', icon='ADD')
 
         col = layout.column(align=True)
         col.prop(props, "resolution_x", text="Resolution X")
@@ -28,6 +29,9 @@ class MainSettingsPanel(bpy.types.Panel):
         col = layout.column(align=True)
         col.prop(props, "posx", text="Effect Position X")
         col.prop(props, "posy", text="Y")
+
+        col = layout.column(align=True)
+        col.prop(props, "master_intensity", text="Master Intensity")
 
 
 class FlareSettingsPanel(bpy.types.Panel):

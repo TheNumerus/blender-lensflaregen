@@ -119,6 +119,7 @@ class OGLRenderOperator(bpy.types.Operator):
                 flare_shader.uniform_float("blades", float(blades))
                 flare_shader.uniform_float("use_rays", flare_rays)
                 flare_shader.uniform_float("rotation", rotation)
+                flare_shader.uniform_float("master_intensity", props.master_intensity)
 
                 flare_batch.draw(flare_shader)
 
@@ -136,6 +137,7 @@ class OGLRenderOperator(bpy.types.Operator):
                     ghost_shader.uniform_float("rotationMatrix", Matrix.Rotation(rotation, 4, 'Z'))
                     # set color
                     ghost_shader.uniform_float("color", Vector((ghost.color[0], ghost.color[1], ghost.color[2], 1)))
+                    ghost_shader.uniform_float("master_intensity", props.master_intensity)
 
                     # set centers
                     if props.ghosts_empty_center:
