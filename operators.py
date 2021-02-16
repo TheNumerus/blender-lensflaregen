@@ -165,6 +165,36 @@ class OGLRenderOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class RenderAnimationOperator(bpy.types.Operator):
+    bl_label = "Render Lens Flare Animation"
+    bl_idname = "render.lens_flare_anim"
+    bl_description = "Renders animation with lens flare"
+
+    def execute(self, context):
+        start = context.scene.frame_start
+        end = context.scene.frame_end
+        step = context.scene.frame_step
+        bpy.context.scene.frame_set(start)
+
+        current = bpy.context.scene.frame_current
+        filepath_base = bpy.context.scene.render.filepath
+        bpy.context.scene.render.image_settings.file_format = 'PNG'
+
+        while True:
+            bpy.ops.render.lens_flare_ogl_render()
+            bpy.context.scene.render.filepath = f"{filepath_base}{current}.png"
+            bpy.ops.render.render(write_still=True)
+
+            bpy.context.scene.frame_set(current + step)
+            current = bpy.context.scene.frame_current
+            if current > end:
+                break
+
+        bpy.context.scene.render.filepath = filepath_base
+
+        return {'FINISHED'}
+
+
 # Operator helpers
 def camera_settings(context):
     """

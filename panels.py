@@ -17,6 +17,8 @@ class MainSettingsPanel(bpy.types.Panel):
 
         row = layout.row()
         row.operator('render.lens_flare_ogl_render', icon='RENDER_STILL')
+        row = layout.row()
+        row.operator('render.lens_flare_anim', icon='RENDER_ANIMATION')
 
         row = layout.row()
         row.prop(props, 'image')

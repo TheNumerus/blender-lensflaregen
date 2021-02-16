@@ -36,7 +36,8 @@ _classes = [
     # operators
     operators.AddGhostOperator,
     operators.RemoveGhostOperator,
-    operators.OGLRenderOperator
+    operators.OGLRenderOperator,
+    operators.RenderAnimationOperator
 ]
 
 
