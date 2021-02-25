@@ -2,12 +2,16 @@ from .properties import *
 
 previews = {}
 
+
 class MainSettingsPanel(bpy.types.Panel):
     bl_label = "Lens Flare Settings"
     bl_idname = "LF_PT_MainSettings"
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
     bl_category = 'Lens Flares'
+
+    def __init__(self):
+        regenerate_ghost_icons()
 
     def draw(self, context):
         layout = self.layout
@@ -95,15 +99,6 @@ class GhostsPanel(bpy.types.Panel):
 
         layout.separator()
 
-        # regenerate icons
-        for i, ghost in enumerate(props.ghosts):
-            if str(i) in previews['ghosts']:
-                icon: bpy.types.ImagePreview = previews['ghosts'][str(i)]
-            else:
-                icon: bpy.types.ImagePreview = previews['ghosts'].new(str(i))
-            icon.icon_size = [1, 1]
-            icon.icon_pixels_float = [ghost.color.r, ghost.color.g, ghost.color.b]
-
         row = layout.row()
 
         layout.use_property_split = False
@@ -176,3 +171,15 @@ class MiscPanel(bpy.types.Panel):
 
         col = layout.column(align=True)
         col.prop(props, 'debug_pos', text='Debug Cross')
+
+
+def regenerate_ghost_icons():
+    props = bpy.context.scene.lens_flare_props
+
+    for i, ghost in enumerate(props.ghosts):
+        if str(i) in previews['ghosts']:
+            icon: bpy.types.ImagePreview = previews['ghosts'][str(i)]
+        else:
+            icon: bpy.types.ImagePreview = previews['ghosts'].new(str(i))
+        icon.icon_size = [1, 1]
+        icon.icon_pixels_float = [ghost.color.r, ghost.color.g, ghost.color.b]

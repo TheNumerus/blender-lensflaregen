@@ -1,9 +1,21 @@
 import bpy
+from .panels import regenerate_ghost_icons
+
+
+def get_ghost_color(self):
+    if 'color' not in self:
+        self['color'] = [0.0, 0.0, 0.0, 1.0]
+    return self['color']
+
+
+def set_ghost_color(self, value):
+    self['color'] = value
+    regenerate_ghost_icons()
 
 
 class LensFlareGhostPropertyGroup(bpy.types.PropertyGroup):
     offset: bpy.props.FloatProperty(name="Offset", description="Ghost offset", default=0.0, soft_min=-1.0, soft_max=1.0)
-    color: bpy.props.FloatVectorProperty(name="Color", description="Ghost color", subtype='COLOR_GAMMA', default=[0.9, 0.9, 0.9], size=3, min=0.0, soft_max=1.0)
+    color: bpy.props.FloatVectorProperty(name="Color", description="Ghost color", subtype='COLOR_GAMMA', default=[0.9, 0.9, 0.9], size=3, min=0.0, soft_max=1.0, get=get_ghost_color, set=set_ghost_color)
     size: bpy.props.FloatProperty(name="Size", description="Ghost Size", default=5.0, min=0.0)
     name: bpy.props.StringProperty(name="Name", description="Ghost Name", default="New Ghost")
 
