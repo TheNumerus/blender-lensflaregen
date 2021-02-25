@@ -1,5 +1,6 @@
 from .properties import *
 
+previews = {}
 
 class MainSettingsPanel(bpy.types.Panel):
     bl_label = "Lens Flare Settings"
@@ -60,6 +61,18 @@ class FlareSettingsPanel(bpy.types.Panel):
         col.prop(props, 'flare_rays', text='Rays')
 
 
+class GhostsUiList(bpy.types.UIList):
+    bl_idname = "LF_UL_Ghosts"
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_property, index=0, flt_flag=0):
+        icon = previews['ghosts'][str(index)].icon_id
+        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+            layout.label(text=item.name, icon_value=icon)
+        else:
+            layout.alignment = 'CENTER'
+            layout.label(text="", icon_value=icon)
+
+
 class GhostsPanel(bpy.types.Panel):
     bl_label = "Ghosts"
     bl_idname = "LF_PT_Ghosts"
@@ -72,27 +85,54 @@ class GhostsPanel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
+
+        props: LensFlareProperties = context.scene.lens_flare_props
+
         layout.use_property_split = True
-
-        props = context.scene.lens_flare_props
-
-        row = layout.row()
-        row.operator('lens_flare.add_ghost')
 
         col = layout.column(align=True)
         col.prop(props, "ghosts_empty_center", text="Transparent Centers")
 
+        layout.separator()
+
+        # regenerate icons
+        for i, ghost in enumerate(props.ghosts):
+            if str(i) in previews['ghosts']:
+                icon: bpy.types.ImagePreview = previews['ghosts'][str(i)]
+            else:
+                icon: bpy.types.ImagePreview = previews['ghosts'].new(str(i))
+            icon.icon_size = [1, 1]
+            icon.icon_pixels_float = [ghost.color.r, ghost.color.g, ghost.color.b]
+
+        row = layout.row()
+
         layout.use_property_split = False
 
-        for i, ghost in enumerate(props.ghosts):
-            box = layout.box()
-            row = box.row(align=True)
+        row.template_list("LF_UL_Ghosts", "", props, "ghosts", props, "selected_ghost", rows=3)
 
-            row.prop(ghost, 'offset')
-            row.prop(ghost, 'color', text='')
-            row.prop(ghost, 'size')
-            remove_op = row.operator('lens_flare.remove_ghost', text='', icon='X')
-            remove_op.remove_id = i
+
+        # ghost adding and removal
+        col = row.column(align=True)
+        col.operator("lens_flare.add_ghost", icon='ADD', text="")
+        remove_op = col.operator('lens_flare.remove_ghost', text='', icon='REMOVE')
+        remove_op.remove_id = props.selected_ghost
+
+        layout.use_property_split = True
+        layout.separator()
+
+        if props.selected_ghost in range(0, len(props.ghosts)):
+            ghost = props.ghosts[props.selected_ghost]
+            col = layout.column(align=True)
+            col.prop(ghost, 'name', text='Name')
+
+            col = layout.column(align=True)
+            col.prop(ghost, 'offset', text='Offset')
+
+            col = layout.column(align=True)
+            col.prop(ghost, 'color', text='Color')
+
+            col = layout.column(align=True)
+            col.prop(ghost, 'size', text='Size')
 
 
 class CameraOverridePanel(bpy.types.Panel):

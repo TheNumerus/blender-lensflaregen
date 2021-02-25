@@ -2,9 +2,10 @@ import bpy
 
 
 class LensFlareGhostPropertyGroup(bpy.types.PropertyGroup):
-    offset: bpy.props.FloatProperty(name="Offset", description="Ghost offset", default=0.0)
+    offset: bpy.props.FloatProperty(name="Offset", description="Ghost offset", default=0.0, soft_min=-1.0, soft_max=1.0)
     color: bpy.props.FloatVectorProperty(name="Color", description="Ghost color", subtype='COLOR_GAMMA', default=[0.9, 0.9, 0.9], size=3, min=0.0, soft_max=1.0)
-    size: bpy.props.FloatProperty(name="Size", description="Ghost Size", default=5.0)
+    size: bpy.props.FloatProperty(name="Size", description="Ghost Size", default=5.0, min=0.0)
+    name: bpy.props.StringProperty(name="Name", description="Ghost Name", default="New Ghost")
 
 
 def get_blades(self):
@@ -25,12 +26,12 @@ def set_blades(self, value):
 
 
 class LensFlareProperties(bpy.types.PropertyGroup):
-    posx: bpy.props.FloatProperty(name="X", description="Position of light source on X axis", default=0.5)
-    posy: bpy.props.FloatProperty(name="Y", description="Position of light source on X axis", default=0.5)
+    posx: bpy.props.FloatProperty(name="X", description="Position of light source on X axis", default=0.5, soft_min=0.0, soft_max=1.0)
+    posy: bpy.props.FloatProperty(name="Y", description="Position of light source on X axis", default=0.5, soft_min=0.0, soft_max=1.0)
     resolution_x: bpy.props.IntProperty(name="Resolution X", description="Number of horizontal pixels in rendered effect", default=1280, min=0)
     resolution_y: bpy.props.IntProperty(name="Resolution Y", description="Number of vertical pixels in rendered effect", default=720, min=0)
     image: bpy.props.PointerProperty(name="Image", type=bpy.types.Image, description="Image to render to")
-    master_intensity: bpy.props.FloatProperty(name="Master Intensity", description="Scales total effect intensity", default=1.0)
+    master_intensity: bpy.props.FloatProperty(name="Master Intensity", description="Scales total effect intensity", default=1.0, min=0.0)
     use_override: bpy.props.BoolProperty(name="Camera Override", description="Use custom camera properties", default=True)
     blades: bpy.props.IntProperty(name="Aperture Blades", description="Number of blades in aperture for polygonal bokeh (at least 3)", default=0, min=0, max=16, get=get_blades, set=set_blades)
     rotation: bpy.props.FloatProperty(name="Aperture Rotation", description="Rotation of blades in aperture", default=0, subtype='ANGLE', unit='ROTATION', min=-3.14159, max=3.14159)
@@ -39,5 +40,6 @@ class LensFlareProperties(bpy.types.PropertyGroup):
     flare_rays: bpy.props.BoolProperty(name="Flare Rays", description="Render rays coming from light source", default=False)
     flare_intensity: bpy.props.FloatProperty(name="Flare Intensity", default=1.0)
     ghosts: bpy.props.CollectionProperty(name="Ghosts", type=LensFlareGhostPropertyGroup)
+    selected_ghost: bpy.props.IntProperty(name="Active ghost number", min=0)
     ghosts_empty_center: bpy.props.BoolProperty(name="Empty Centers", description="Renders ghosts with more transparent centers", default=False)
     debug_pos: bpy.props.BoolProperty(name="Debug Cross", description="Render only cross with position", default=False)

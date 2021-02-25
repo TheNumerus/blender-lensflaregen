@@ -22,12 +22,14 @@ else:
     from . import panels
 
 import bpy
+import bpy.utils.previews
 
 _classes = [
     # properties
     properties.LensFlareGhostPropertyGroup,
     properties.LensFlareProperties,
     # panels
+    panels.GhostsUiList,
     panels.MainSettingsPanel,
     panels.FlareSettingsPanel,
     panels.GhostsPanel,
@@ -46,8 +48,15 @@ def register():
         bpy.utils.register_class(cls)
     bpy.types.Scene.lens_flare_props = bpy.props.PointerProperty(type=properties.LensFlareProperties)
 
+    coll = bpy.utils.previews.new()
+    panels.previews['ghosts'] = coll
+
 
 def unregister():
+    for coll in panels.previews.values():
+        bpy.utils.previews.remove(coll)
+    panels.previews.clear()
+
     for cls in _classes:
         bpy.utils.unregister_class(cls)
     del bpy.types.Scene.lens_flare_props

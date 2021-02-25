@@ -39,6 +39,10 @@ class RemoveGhostOperator(bpy.types.Operator):
             self.report({'ERROR_INVALID_INPUT'}, "Invalid ID of ghost to delete")
             return {'CANCELLED'}
 
+        # move active selector
+        if len(props.ghosts) != 1 and props.selected_ghost == (len(props.ghosts) - 1):
+            props.selected_ghost = props.selected_ghost - 1
+
         props.ghosts.remove(self.remove_id)
 
         return {'FINISHED'}
