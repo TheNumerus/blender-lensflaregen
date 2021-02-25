@@ -112,7 +112,7 @@ class OGLRenderOperator(bpy.types.Operator):
                 flare_position = Vector((props.posx, props.posy))
                 flare_rays = 0.0
                 if props.flare_rays:
-                    flare_rays = 1.0
+                    flare_rays = 1.0 * props.rays_intensity
                 flare_shader.bind()
 
                 flare_shader.uniform_float("color", flare_color)

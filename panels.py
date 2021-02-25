@@ -63,6 +63,8 @@ class FlareSettingsPanel(bpy.types.Panel):
         col.prop(props, 'flare_intensity', text='Intensity')
         col = layout.column(align=True)
         col.prop(props, 'flare_rays', text='Rays')
+        col = layout.column(align=True)
+        col.prop(props, 'rays_intensity', text='Ray Intensity')
 
 
 class GhostsUiList(bpy.types.UIList):

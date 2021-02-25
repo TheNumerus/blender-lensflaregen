@@ -47,7 +47,7 @@ fragment_shader_ghost = '''
         float center = sqrt(pow(posInterp.x, 2.0) + pow(posInterp.y, 2.0));
         float gauss = 0.4 * pow(E, -(pow(center, 2.0) / 0.3));
         float edge = (1.0 - pow(colorInterp.x, 40.0)) - (gauss * empty);
-        FragColor = color * edge * master_intensity;
+        FragColor = vec4(color.xyz, edge) * master_intensity;
     }
 '''
 
@@ -81,7 +81,7 @@ fragment_shader_flare = '''
         
         float rays_center = 2.0 * gauss(distance, 0.0, 0.02);
         
-        return (ray_centers + rays_center) * use_rays;
+        return ray_centers + rays_center;
     }
 
     void main() {
@@ -99,10 +99,10 @@ fragment_shader_flare = '''
         // normalize
         angle = ((angle + rotation) / (2.0 * PI));
         
-        float rays_value = rays(dist, angle);
+        float rays_value = rays(dist, angle); 
         
-        float sum = flare + rays_value;
+        float sum = (flare * intensity) + (rays_value * use_rays);
         
-        FragColor = vec4(sum, sum, sum, 1.0) * color * intensity * master_intensity;
+        FragColor = vec4(sum, sum, sum, 1.0) * color * master_intensity;
     }
 '''
