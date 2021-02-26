@@ -246,5 +246,8 @@ def refresh_compositor():
     Quick and dirty way to refresh compositor. Adds new node and immediately removes it.
     """
     tree = bpy.context.scene.node_tree
+    # if user does not have any nodes, no need to refresh, also,
+    if tree is None:
+        return
     node = tree.nodes.new(type='CompositorNodeRGB')
     tree.nodes.remove(node)

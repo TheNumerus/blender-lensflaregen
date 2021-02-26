@@ -4,7 +4,7 @@ from .panels import regenerate_ghost_icons
 
 def get_ghost_color(self):
     if 'color' not in self:
-        self['color'] = [0.0, 0.0, 0.0, 1.0]
+        self['color'] = [0.9, 0.9, 0.9]
     return self['color']
 
 
