@@ -107,7 +107,6 @@ class GhostsPanel(bpy.types.Panel):
 
         row.template_list("LF_UL_Ghosts", "", props, "ghosts", props, "selected_ghost", rows=3)
 
-
         # ghost adding and removal
         col = row.column(align=True)
         col.operator("lens_flare.add_ghost", icon='ADD', text="")

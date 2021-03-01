@@ -8,7 +8,7 @@ def draw_debug_cross(props):
     center_x = int(max_x * props.position_x)
     center_y = int(max_y * props.position_y)
 
-    buffer = [0.0 for x in range(max_x * max_y * 4)]
+    buffer = [0.0 for _x in range(max_x * max_y * 4)]
 
     # draw horizontal line
     for y in range(max(center_y - thickness, 0), min(center_y + thickness, max_y)):

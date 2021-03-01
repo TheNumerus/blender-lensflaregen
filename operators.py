@@ -135,7 +135,8 @@ class OGLRenderOperator(bpy.types.Operator):
                     ghost_x = ((props.position_x - 0.5) * 2.0) * ghost.offset
                     ghost_y = ((props.position_y - 0.5) * 2.0) * ghost.offset
                     # move and scale ghosts
-                    ghost_shader.uniform_float("modelMatrix", Matrix.Translation((ghost_x, ghost_y, 0.0)) @ Matrix.Scale(ghost.size / 100, 4))
+                    model_matrix = Matrix.Translation((ghost_x, ghost_y, 0.0)) @ Matrix.Scale(ghost.size / 100, 4)
+                    ghost_shader.uniform_float("modelMatrix", model_matrix)
                     # rotate ghost
                     ghost_shader.uniform_float("rotationMatrix", Matrix.Rotation(rotation, 4, 'Z'))
                     # set color
