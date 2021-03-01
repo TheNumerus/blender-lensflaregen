@@ -11,12 +11,10 @@ bl_info = {
 
 if "bpy" in locals():
     import importlib
-    importlib.reload(image_processing)
     importlib.reload(properties)
     importlib.reload(operators)
     importlib.reload(panels)
 else:
-    from . import image_processing
     from . import properties
     from . import operators
     from . import panels

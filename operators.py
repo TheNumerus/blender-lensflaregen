@@ -1,14 +1,10 @@
 import math
+import time
+
 from gpu_extras.batch import batch_for_shader
+from mathutils import Matrix, Vector
 
 from .properties import *
-import time
-import numpy as np
-import gpu
-import bgl
-import random
-from mathutils import Matrix, Vector, Euler
-from gpu_extras.presets import draw_circle_2d
 from . import image_processing, shaders
 
 
@@ -55,6 +51,9 @@ class OGLRenderOperator(bpy.types.Operator):
 
     def execute(self, context):
         props: MasterProperties = context.scene.lens_flare_props
+
+        import gpu
+        import bgl
 
         start_time = time.perf_counter()
 
