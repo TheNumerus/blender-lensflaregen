@@ -1,10 +1,10 @@
 bl_info = {
     "name": "Lens Flare Generator",
     "description": "Generates lens flare effects from image",
-    "blender": (2, 91, 0),
+    "blender": (2, 92, 0),
     "category": "Node",
     "author": "Petr Volf",
-    "version": (0, 1, 2),
+    "version": (0, 2, 0),
     "warning": "Work in Progress version",
 }
 
@@ -26,8 +26,10 @@ import bpy.utils.previews
 
 _classes = [
     # properties
-    properties.LensFlareGhostPropertyGroup,
-    properties.LensFlareProperties,
+    properties.FlareProperties,
+    properties.GhostProperties,
+    properties.CameraProperties,
+    properties.MasterProperties,
     # panels
     panels.GhostsUiList,
     panels.MainSettingsPanel,
@@ -39,14 +41,14 @@ _classes = [
     operators.AddGhostOperator,
     operators.RemoveGhostOperator,
     operators.OGLRenderOperator,
-    operators.RenderAnimationOperator
+    operators.RenderAnimationOperator,
 ]
 
 
 def register():
     for cls in _classes:
         bpy.utils.register_class(cls)
-    bpy.types.Scene.lens_flare_props = bpy.props.PointerProperty(type=properties.LensFlareProperties)
+    bpy.types.Scene.lens_flare_props = bpy.props.PointerProperty(type=properties.MasterProperties)
 
     coll = bpy.utils.previews.new()
     panels.previews['ghosts'] = coll

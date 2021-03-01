@@ -5,8 +5,8 @@ def draw_debug_cross(props):
 
     max_x, max_y = props.image.size
 
-    center_x = int(max_x * props.posx)
-    center_y = int(max_y * props.posy)
+    center_x = int(max_x * props.position_x)
+    center_y = int(max_y * props.position_y)
 
     buffer = [0.0 for x in range(max_x * max_y * 4)]
 

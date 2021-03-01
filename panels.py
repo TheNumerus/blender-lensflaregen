@@ -18,7 +18,7 @@ class MainSettingsPanel(bpy.types.Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        props = context.scene.lens_flare_props
+        props: MasterProperties = context.scene.lens_flare_props
 
         row = layout.row()
         row.operator('render.lens_flare_ogl_render', icon='RENDER_STILL')
@@ -34,8 +34,8 @@ class MainSettingsPanel(bpy.types.Panel):
         col.prop(props, "resolution_y", text="Y")
 
         col = layout.column(align=True)
-        col.prop(props, "posx", text="Effect Position X")
-        col.prop(props, "posy", text="Y")
+        col.prop(props, "position_x", text="Effect Position X")
+        col.prop(props, "position_y", text="Y")
 
         col = layout.column(align=True)
         col.prop(props, "master_intensity", text="Master Intensity")
@@ -53,16 +53,16 @@ class FlareSettingsPanel(bpy.types.Panel):
         layout = self.layout
         layout.use_property_split = True
 
-        props = context.scene.lens_flare_props
+        props: FlareProperties = context.scene.lens_flare_props.flare
 
         col = layout.column(align=True)
-        col.prop(props, 'flare_color', text='Color')
+        col.prop(props, 'color', text='Color')
         col = layout.column(align=True)
-        col.prop(props, 'flare_size', text='Size')
+        col.prop(props, 'size', text='Size')
         col = layout.column(align=True)
-        col.prop(props, 'flare_intensity', text='Intensity')
+        col.prop(props, 'intensity', text='Intensity')
         col = layout.column(align=True)
-        col.prop(props, 'flare_rays', text='Rays')
+        col.prop(props, 'rays', text='Rays')
         col = layout.column(align=True)
         col.prop(props, 'rays_intensity', text='Ray Intensity')
 
@@ -92,7 +92,7 @@ class GhostsPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        props: LensFlareProperties = context.scene.lens_flare_props
+        props: MasterProperties = context.scene.lens_flare_props
 
         layout.use_property_split = True
 
@@ -143,18 +143,19 @@ class CameraOverridePanel(bpy.types.Panel):
 
     def draw_header(self, context):
         layout = self.layout
-        layout.prop(context.scene.lens_flare_props, 'use_override', text='')
+        props: MasterProperties = context.scene.lens_flare_props
+        layout.prop(props.camera, 'use_override', text='')
 
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        props = context.scene.lens_flare_props
-        layout.enabled = props.use_override
+        props: MasterProperties = context.scene.lens_flare_props
+        layout.enabled = props.camera.use_override
 
         col = layout.column(align=True)
-        col.prop(props, 'blades', text='Aperture Blades')
+        col.prop(props.camera, 'blades', text='Aperture Blades')
         col = layout.column(align=True)
-        col.prop(props, 'rotation', text='Rotation')
+        col.prop(props.camera, 'rotation', text='Rotation')
 
 
 class MiscPanel(bpy.types.Panel):

@@ -18,7 +18,7 @@ class AddGhostOperator(bpy.types.Operator):
     bl_description = "Creates new ghost"
 
     def execute(self, context):
-        props: LensFlareProperties = context.scene.lens_flare_props
+        props: MasterProperties = context.scene.lens_flare_props
 
         props.ghosts.add()
 
@@ -33,7 +33,7 @@ class RemoveGhostOperator(bpy.types.Operator):
     remove_id: bpy.props.IntProperty(default=-1, description="Index of ghost to remove")
 
     def execute(self, context):
-        props: LensFlareProperties = context.scene.lens_flare_props
+        props: MasterProperties = context.scene.lens_flare_props
 
         if self.remove_id == -1:
             self.report({'ERROR_INVALID_INPUT'}, "Invalid ID of ghost to delete")
@@ -54,7 +54,7 @@ class OGLRenderOperator(bpy.types.Operator):
     bl_description = "Renders lens flare into selected image"
 
     def execute(self, context):
-        props: LensFlareProperties = context.scene.lens_flare_props
+        props: MasterProperties = context.scene.lens_flare_props
 
         start_time = time.perf_counter()
 
@@ -108,16 +108,16 @@ class OGLRenderOperator(bpy.types.Operator):
                 gpu.matrix.load_projection_matrix(Matrix.Identity(4))
 
                 # render glare
-                flare_color = Vector((props.flare_color[0], props.flare_color[1], props.flare_color[2], 1.0))
-                flare_position = Vector((props.posx, props.posy))
+                flare_color = Vector((props.flare.color[0], props.flare.color[1], props.flare.color[2], 1.0))
+                flare_position = Vector((props.position_x, props.position_y))
                 flare_rays = 0.0
-                if props.flare_rays:
-                    flare_rays = 1.0 * props.rays_intensity
+                if props.flare.rays:
+                    flare_rays = 1.0 * props.flare.rays_intensity
                 flare_shader.bind()
 
                 flare_shader.uniform_float("color", flare_color)
-                flare_shader.uniform_float("size", props.flare_size)
-                flare_shader.uniform_float("intensity", props.flare_intensity)
+                flare_shader.uniform_float("size", props.flare.size)
+                flare_shader.uniform_float("intensity", props.flare.intensity)
                 flare_shader.uniform_float("flare_position", flare_position)
                 flare_shader.uniform_float("aspect_ratio", ratio)
                 flare_shader.uniform_float("blades", float(blades))
@@ -133,8 +133,8 @@ class OGLRenderOperator(bpy.types.Operator):
                 ghost_shader.uniform_float("aspect_ratio", ratio)
                 for ghost in props.ghosts:
 
-                    ghost_x = ((props.posx - 0.5) * 2.0) * ghost.offset
-                    ghost_y = ((props.posy - 0.5) * 2.0) * ghost.offset
+                    ghost_x = ((props.position_x - 0.5) * 2.0) * ghost.offset
+                    ghost_y = ((props.position_y - 0.5) * 2.0) * ghost.offset
                     # move and scale ghosts
                     ghost_shader.uniform_float("modelMatrix", Matrix.Translation((ghost_x, ghost_y, 0.0)) @ Matrix.Scale(ghost.size / 100, 4))
                     # rotate ghost
@@ -205,10 +205,10 @@ def camera_settings(context):
     Returns camera aperture shape and rotation from active camera, or from override
     :return: blades, rotation
     """
-    props: LensFlareProperties = context.scene.lens_flare_props
+    props: MasterProperties = context.scene.lens_flare_props
 
     # get camera settings from active camera if no override
-    if not props.use_override:
+    if not props.camera.use_override:
         camera = bpy.context.scene.camera
         if camera is None:
             raise Exception("No camera is active")
@@ -216,7 +216,7 @@ def camera_settings(context):
 
         return camera.dof.aperture_blades, camera.dof.aperture_rotation
 
-    return props.blades, props.rotation
+    return props.camera.blades, props.camera.rotation
 
 
 def batch_from_blades(blades: int, shader):
