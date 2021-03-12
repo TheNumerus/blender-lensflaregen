@@ -86,6 +86,11 @@ class OGLRenderOperator(bpy.types.Operator):
         if blades == 0:
             blades = 64
 
+        (flare_vector_x, flare_vector_y) = (props.position_x - 0.5, props.position_y - 0.5);
+        flare_vector_len = math.sqrt(pow(flare_vector_x, 2) + pow(flare_vector_y, 2) + 0.0001)
+        flare_vector_x /= flare_vector_len
+        flare_vector_y /= flare_vector_len
+
         offscreen = gpu.types.GPUOffScreen(max_x, max_y)
 
         ghost_shader = gpu.types.GPUShader(shaders.vertex_shader_ghost, shaders.fragment_shader_ghost)
@@ -131,23 +136,30 @@ class OGLRenderOperator(bpy.types.Operator):
                 # fix aspect ratio
                 ghost_shader.uniform_float("aspect_ratio", ratio)
                 for ghost in props.ghosts:
-
+                    # calculate position
                     ghost_x = ((props.position_x - 0.5) * 2.0) * ghost.offset
                     ghost_y = ((props.position_y - 0.5) * 2.0) * ghost.offset
-                    # move and scale ghosts
+                    # add perpendicular offset
+                    ghost_x += flare_vector_y * ghost.perpendicular_offset
+                    ghost_y += -flare_vector_x * ghost.perpendicular_offset
+
+                    # transform matrix
                     model_matrix = Matrix.Translation((ghost_x, ghost_y, 0.0)) @ Matrix.Scale(ghost.size / 100, 4)
+                    # transparency
+                    center_transparency = 0.0
+                    if ghost.transparent_center:
+                        center_transparency = 1.0
+
+                    # move and scale ghosts
                     ghost_shader.uniform_float("modelMatrix", model_matrix)
                     # rotate ghost
                     ghost_shader.uniform_float("rotationMatrix", Matrix.Rotation(rotation, 4, 'Z'))
                     # set color
                     ghost_shader.uniform_float("color", Vector((ghost.color[0], ghost.color[1], ghost.color[2], 1)))
                     ghost_shader.uniform_float("master_intensity", props.master_intensity)
-
+                    ghost_shader.uniform_float("intensity", ghost.intensity)
                     # set centers
-                    if props.ghosts_empty_center:
-                        ghost_shader.uniform_float("empty", 1.0)
-                    else:
-                        ghost_shader.uniform_float("empty", 0.0)
+                    ghost_shader.uniform_float("empty", center_transparency)
 
                     ghost_batch.draw(ghost_shader)
 

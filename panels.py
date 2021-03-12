@@ -94,13 +94,6 @@ class GhostsPanel(bpy.types.Panel):
 
         props: MasterProperties = context.scene.lens_flare_props
 
-        layout.use_property_split = True
-
-        col = layout.column(align=True)
-        col.prop(props, "ghosts_empty_center", text="Transparent Centers")
-
-        layout.separator()
-
         row = layout.row()
 
         layout.use_property_split = False
@@ -125,10 +118,19 @@ class GhostsPanel(bpy.types.Panel):
             col.prop(ghost, 'offset', text='Offset')
 
             col = layout.column(align=True)
+            col.prop(ghost, 'perpendicular_offset', text='Perpendicular Offset')
+
+            col = layout.column(align=True)
             col.prop(ghost, 'color', text='Color')
 
             col = layout.column(align=True)
+            col.prop(ghost, 'intensity', text='Intensity')
+
+            col = layout.column(align=True)
             col.prop(ghost, 'size', text='Size')
+
+            col = layout.column(align=True)
+            col.prop(ghost, 'transparent_center', text='Transparent Center')
 
 
 class CameraOverridePanel(bpy.types.Panel):
@@ -183,5 +185,5 @@ def regenerate_ghost_icons():
             icon: bpy.types.ImagePreview = previews['ghosts'][str(i)]
         else:
             icon: bpy.types.ImagePreview = previews['ghosts'].new(str(i))
-        icon.icon_size = [1, 1]
-        icon.icon_pixels_float = [ghost.color.r, ghost.color.g, ghost.color.b]
+        icon.icon_size = [2, 2]
+        icon.icon_pixels_float = [ghost.color.r, ghost.color.g, ghost.color.b, 1.0] * 4

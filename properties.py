@@ -29,6 +29,13 @@ class GhostProperties(bpy.types.PropertyGroup):
         soft_min=-1.0,
         soft_max=1.0,
     )
+    perpendicular_offset: FloatProperty(
+        name="Offset",
+        description="Ghost offsetfrom the main axis",
+        default=0.0,
+        soft_min=-1.0,
+        soft_max=1.0,
+    )
     color: FloatVectorProperty(
         name="Color",
         description="Ghost color",
@@ -50,6 +57,17 @@ class GhostProperties(bpy.types.PropertyGroup):
         name="Name",
         description="Ghost Name",
         default="New Ghost",
+    )
+    transparent_center: BoolProperty(
+        name="Transparent Center",
+        description="Renders ghost with more transparent center",
+        default=True,
+    )
+    intensity: FloatProperty(
+        name="Ghost Intensity",
+        description="Intensity of the ghost artifact",
+        default=1.0,
+        min=0.0,
     )
 
 
@@ -194,11 +212,6 @@ class MasterProperties(bpy.types.PropertyGroup):
     selected_ghost: IntProperty(
         name="Active ghost number",
         min=0,
-    )
-    ghosts_empty_center: BoolProperty(
-        name="Empty Centers",
-        description="Renders ghosts with more transparent centers",
-        default=False,
     )
     # debug props
     debug_pos: BoolProperty(
