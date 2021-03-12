@@ -22,9 +22,9 @@ class AddGhostOperator(bpy.types.Operator):
 
 
 class RemoveGhostOperator(bpy.types.Operator):
-    bl_label = "Deletes ghost"
+    bl_label = "Delete ghost"
     bl_idname = "lens_flare.remove_ghost"
-    bl_description = "Creates new ghost"
+    bl_description = "Removes active ghost"
 
     remove_id: bpy.props.IntProperty(default=-1, description="Index of ghost to remove")
 
@@ -40,6 +40,34 @@ class RemoveGhostOperator(bpy.types.Operator):
             props.selected_ghost = props.selected_ghost - 1
 
         props.ghosts.remove(self.remove_id)
+
+        return {'FINISHED'}
+
+
+class DuplicateGhostOperator(bpy.types.Operator):
+    bl_label = "Duplicate ghost"
+    bl_idname = "lens_flare.duplicate_ghost"
+    bl_description = "Creates new ghost with same values as the active ghost"
+
+    def execute(self, context):
+        props: MasterProperties = context.scene.lens_flare_props
+
+        self.report({'INFO'}, "TEST_PRE")
+
+        active_ghost: GhostProperties = props.ghosts[props.selected_ghost]
+
+        self.report({'INFO'}, "TEST")
+
+        # TODO clean-up
+        new_ghost: GhostProperties = props.ghosts.add()
+
+        new_ghost.color = active_ghost.color
+        new_ghost.intensity = active_ghost.intensity
+        new_ghost.name = active_ghost.name
+        new_ghost.offset = active_ghost.offset
+        new_ghost.perpendicular_offset = active_ghost.perpendicular_offset
+        new_ghost.size = active_ghost.size
+        new_ghost.transparent_center = active_ghost.transparent_center
 
         return {'FINISHED'}
 
