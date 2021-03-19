@@ -195,6 +195,7 @@ class OGLRenderOperator(bpy.types.Operator):
                     gpu.matrix.load_projection_matrix(Matrix.Identity(4))
 
                     copy_shader.uniform_float("ghost", 0)
+                    copy_shader.uniform_float("dispersion", ghost.dispersion)
 
                     flare_batch.draw(copy_shader)
 

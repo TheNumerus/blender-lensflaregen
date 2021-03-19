@@ -69,6 +69,13 @@ class GhostProperties(bpy.types.PropertyGroup):
         default=1.0,
         min=0.0,
     )
+    dispersion: FloatProperty(
+        name="Ghost dispersion",
+        description="Intensity of ghost dispersion (1.0 is no dispersion)",
+        default=1.0,
+        min=0.01,
+        max=1.99,
+    )
 
 
 class FlareProperties(bpy.types.PropertyGroup):

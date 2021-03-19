@@ -131,6 +131,9 @@ class GhostsPanel(bpy.types.Panel):
             col.prop(ghost, 'size', text='Size')
 
             col = layout.column(align=True)
+            col.prop(ghost, 'dispersion', text='Dispersion')
+
+            col = layout.column(align=True)
             col.prop(ghost, 'transparent_center', text='Transparent Center')
 
 
