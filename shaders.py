@@ -107,3 +107,26 @@ fragment_shader_flare = '''
         FragColor = vec4(sum, sum, sum, 1.0) * color * master_intensity;
     }
 '''
+
+# language=GLSL
+fragment_shader_copy_ca = '''
+    uniform sampler2D ghost;
+    
+    in vec2 uvInterp;
+    
+    out vec4 FragColor;
+    
+    vec2 uv_scaled(vec2 uv, float scale) {
+        vec2 centered = uv - 0.5;
+        vec2 scaled = centered * scale;
+        return scaled + 0.5;
+    }
+
+    void main() {
+        float ghost_r = texture(ghost, uv_scaled(uvInterp, 1.0)).r;
+        float ghost_g = texture(ghost, uv_scaled(uvInterp, 1.0)).g;
+        float ghost_b = texture(ghost, uv_scaled(uvInterp, 1.0)).b;
+        
+        FragColor = vec4(ghost_r, ghost_g, ghost_b, 1.0);
+    }
+'''

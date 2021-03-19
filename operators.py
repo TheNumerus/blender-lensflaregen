@@ -120,6 +120,7 @@ class OGLRenderOperator(bpy.types.Operator):
         flare_vector_y /= flare_vector_len
 
         offscreen = gpu.types.GPUOffScreen(max_x, max_y)
+        ghost_fb = gpu.types.GPUOffScreen(max_x, max_y)
 
         ghost_shader = gpu.types.GPUShader(shaders.vertex_shader_ghost, shaders.fragment_shader_ghost)
         ghost_batch = batch_from_blades(blades, ghost_shader)
@@ -127,6 +128,9 @@ class OGLRenderOperator(bpy.types.Operator):
         flare_shader = gpu.types.GPUShader(shaders.vertex_shader_quad, shaders.fragment_shader_flare)
         flare_batch = batch_quad(flare_shader)
 
+        copy_shader = gpu.types.GPUShader(shaders.vertex_shader_quad, shaders.fragment_shader_copy_ca)
+
+        # clear framebuffer
         with offscreen.bind():
             # black background
             bgl.glClearColor(0.0, 0.0, 0.0, 1.0)
@@ -134,6 +138,68 @@ class OGLRenderOperator(bpy.types.Operator):
             bgl.glEnable(bgl.GL_BLEND)
             bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE)
 
+        # first render ghosts one by one
+        for ghost in props.ghosts:
+            # calculate position
+            ghost_x = ((props.position_x - 0.5) * 2.0) * ghost.offset
+            ghost_y = ((props.position_y - 0.5) * 2.0) * ghost.offset
+            # add perpendicular offset
+            ghost_x += flare_vector_y * ghost.perpendicular_offset
+            ghost_y += -flare_vector_x * ghost.perpendicular_offset
+
+            with ghost_fb.bind():
+                # black background
+                bgl.glClearColor(0.0, 0.0, 0.0, 1.0)
+                bgl.glClear(bgl.GL_COLOR_BUFFER_BIT)
+                bgl.glEnable(bgl.GL_BLEND)
+                bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE)
+
+                with gpu.matrix.push_pop():
+                    # reset matrices
+                    gpu.matrix.load_matrix(Matrix.Identity(4))
+                    gpu.matrix.load_projection_matrix(Matrix.Identity(4))
+
+                    ghost_shader.bind()
+
+                    ghost_shader.uniform_float("aspect_ratio", ratio)
+
+                    # transform matrix
+                    model_matrix = Matrix.Translation((ghost_x, ghost_y, 0.0)) @ Matrix.Scale(ghost.size / 100, 4)
+                    # transparency
+                    center_transparency = 0.0
+                    if ghost.transparent_center:
+                        center_transparency = 1.0
+
+                    # move and scale ghosts
+                    ghost_shader.uniform_float("modelMatrix", model_matrix)
+                    # rotate ghost
+                    ghost_shader.uniform_float("rotationMatrix", Matrix.Rotation(rotation, 4, 'Z'))
+                    # set color
+                    ghost_shader.uniform_float("color", Vector((ghost.color[0], ghost.color[1], ghost.color[2], 1)))
+                    ghost_shader.uniform_float("master_intensity", props.master_intensity)
+                    ghost_shader.uniform_float("intensity", ghost.intensity)
+                    # set centers
+                    ghost_shader.uniform_float("empty", center_transparency)
+
+                    ghost_batch.draw(ghost_shader)
+
+            with offscreen.bind():
+                # now copy to final buffer
+                bgl.glActiveTexture(bgl.GL_TEXTURE0)
+                bgl.glBindTexture(bgl.GL_TEXTURE_2D, ghost_fb.color_texture)
+
+                with gpu.matrix.push_pop():
+                    copy_shader.bind()
+                    # reset matrices
+                    gpu.matrix.load_matrix(Matrix.Identity(4))
+                    gpu.matrix.load_projection_matrix(Matrix.Identity(4))
+
+                    copy_shader.uniform_float("ghost", 0)
+
+                    flare_batch.draw(copy_shader)
+
+        # finaly render flare on top
+        with offscreen.bind():
             with gpu.matrix.push_pop():
                 # reset matrices
                 gpu.matrix.load_matrix(Matrix.Identity(4))
@@ -159,44 +225,13 @@ class OGLRenderOperator(bpy.types.Operator):
 
                 flare_batch.draw(flare_shader)
 
-                # draw ghosts
-                ghost_shader.bind()
-                # fix aspect ratio
-                ghost_shader.uniform_float("aspect_ratio", ratio)
-                for ghost in props.ghosts:
-                    # calculate position
-                    ghost_x = ((props.position_x - 0.5) * 2.0) * ghost.offset
-                    ghost_y = ((props.position_y - 0.5) * 2.0) * ghost.offset
-                    # add perpendicular offset
-                    ghost_x += flare_vector_y * ghost.perpendicular_offset
-                    ghost_y += -flare_vector_x * ghost.perpendicular_offset
-
-                    # transform matrix
-                    model_matrix = Matrix.Translation((ghost_x, ghost_y, 0.0)) @ Matrix.Scale(ghost.size / 100, 4)
-                    # transparency
-                    center_transparency = 0.0
-                    if ghost.transparent_center:
-                        center_transparency = 1.0
-
-                    # move and scale ghosts
-                    ghost_shader.uniform_float("modelMatrix", model_matrix)
-                    # rotate ghost
-                    ghost_shader.uniform_float("rotationMatrix", Matrix.Rotation(rotation, 4, 'Z'))
-                    # set color
-                    ghost_shader.uniform_float("color", Vector((ghost.color[0], ghost.color[1], ghost.color[2], 1)))
-                    ghost_shader.uniform_float("master_intensity", props.master_intensity)
-                    ghost_shader.uniform_float("intensity", ghost.intensity)
-                    # set centers
-                    ghost_shader.uniform_float("empty", center_transparency)
-
-                    ghost_batch.draw(ghost_shader)
-
             # copy rendered image to RAM
             buffer = bgl.Buffer(bgl.GL_FLOAT, max_x * max_y * 4)
             bgl.glReadBuffer(bgl.GL_BACK)
             bgl.glReadPixels(0, 0, max_x, max_y, bgl.GL_RGBA, bgl.GL_FLOAT, buffer)
 
         offscreen.free()
+        ghost_fb.free()
 
         props.image.scale(max_x, max_y)
         props.image.pixels = [v for v in buffer]
