@@ -3,6 +3,7 @@ from typing import Any, Dict
 
 import gpu
 import bgl
+import bpy
 from gpu_extras.batch import batch_for_shader
 from mathutils import Matrix, Vector
 
@@ -103,14 +104,23 @@ def render_lens_flare(props: MasterProperties):
             bgl.glActiveTexture(bgl.GL_TEXTURE0)
             bgl.glBindTexture(bgl.GL_TEXTURE_2D, ghost_fb.color_texture)
 
+            bgl.glActiveTexture(bgl.GL_TEXTURE1)
+            bgl.glBindTexture(bgl.GL_TEXTURE_2D, bpy.data.images['spectral.png'].bindcode)
+
             with gpu.matrix.push_pop():
                 copy_shader.bind()
                 # reset matrices
                 gpu.matrix.load_matrix(Matrix.Identity(4))
                 gpu.matrix.load_projection_matrix(Matrix.Identity(4))
 
-                copy_shader.uniform_float("ghost", 0)
-                copy_shader.uniform_float("dispersion", ghost.dispersion)
+                copy_uniforms = {
+                    "ghost": 0,
+                    "spectral": 1,
+                    "dispersion": ghost.dispersion
+                }
+
+                set_uniforms(copy_shader, copy_uniforms)
+                copy_shader.uniform_int("samples", props.dispersion_samples)
 
                 flare_batch.draw(copy_shader)
 

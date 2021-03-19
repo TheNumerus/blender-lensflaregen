@@ -180,6 +180,9 @@ class MiscPanel(bpy.types.Panel):
         col = layout.column(align=True)
         col.prop(props, 'debug_pos', text='Debug Cross')
 
+        col = layout.column(align=True)
+        col.prop(props, 'dispersion_samples', text='Dispersion Samples')
+
 
 def regenerate_ghost_icons():
     props = bpy.context.scene.lens_flare_props

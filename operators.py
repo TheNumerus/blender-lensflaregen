@@ -1,4 +1,5 @@
 import time
+import os
 
 from .properties import *
 from . import image_processing, ogl
@@ -103,6 +104,10 @@ class OGLRenderOperator(bpy.types.Operator):
             refresh_compositor()
 
             return {'FINISHED'}
+
+        img_path = os.path.join(os.path.dirname(__file__), 'images/spectral.png')
+        spectral_img = bpy.data.images.load(img_path, check_existing=True)
+        spectral_img.gl_load()
 
         buffer = ogl.render_lens_flare(props)
 
