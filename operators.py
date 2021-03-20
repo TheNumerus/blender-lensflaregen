@@ -21,9 +21,18 @@ class AddGhostOperator(bpy.types.Operator):
 class RemoveGhostOperator(bpy.types.Operator):
     bl_label = "Delete ghost"
     bl_idname = "lens_flare.remove_ghost"
-    bl_description = "Removes active ghost"
+    bl_description = "Removes ghost"
 
     remove_id: bpy.props.IntProperty(default=-1, description="Index of ghost to remove")
+
+    @classmethod
+    def poll(cls, context):
+        props: MasterProperties = context.scene.lens_flare_props
+
+        if len(props.ghosts) == 0:
+            return False
+
+        return True
 
     def execute(self, context):
         props: MasterProperties = context.scene.lens_flare_props
@@ -46,25 +55,36 @@ class DuplicateGhostOperator(bpy.types.Operator):
     bl_idname = "lens_flare.duplicate_ghost"
     bl_description = "Creates new ghost with same values as the active ghost"
 
+    duplicate_id: bpy.props.IntProperty(default=-1, description="Index of ghost to duplicate")
+
+    @classmethod
+    def poll(cls, context):
+        props: MasterProperties = context.scene.lens_flare_props
+
+        if len(props.ghosts) == 0:
+            return False
+
+        return True
+
     def execute(self, context):
         props: MasterProperties = context.scene.lens_flare_props
 
-        self.report({'INFO'}, "TEST_PRE")
+        if self.duplicate_id == -1:
+            self.report({'ERROR_INVALID_INPUT'}, "Invalid ID of ghost to duplicate")
+            return {'CANCELLED'}
 
-        active_ghost: GhostProperties = props.ghosts[props.selected_ghost]
-
-        self.report({'INFO'}, "TEST")
-
-        # TODO clean-up
         new_ghost: GhostProperties = props.ghosts.add()
 
-        new_ghost.color = active_ghost.color
-        new_ghost.intensity = active_ghost.intensity
-        new_ghost.name = active_ghost.name
-        new_ghost.offset = active_ghost.offset
-        new_ghost.perpendicular_offset = active_ghost.perpendicular_offset
-        new_ghost.size = active_ghost.size
-        new_ghost.transparent_center = active_ghost.transparent_center
+        # TODO clean-up
+        # for some reason, this crashes when `props.ghosts[self.duplicate_id]` is in temp variable
+        new_ghost.color = props.ghosts[self.duplicate_id].color
+        new_ghost.intensity = props.ghosts[self.duplicate_id].intensity
+        new_ghost.name = props.ghosts[self.duplicate_id].name
+        new_ghost.offset = props.ghosts[self.duplicate_id].offset
+        new_ghost.perpendicular_offset = props.ghosts[self.duplicate_id].perpendicular_offset
+        new_ghost.size = props.ghosts[self.duplicate_id].size
+        new_ghost.transparent_center = props.ghosts[self.duplicate_id].transparent_center
+        new_ghost.dispersion = props.ghosts[self.duplicate_id].dispersion
 
         return {'FINISHED'}
 
@@ -126,6 +146,10 @@ class RenderAnimationOperator(bpy.types.Operator):
     bl_label = "Render Lens Flare Animation"
     bl_idname = "render.lens_flare_anim"
     bl_description = "Renders animation with lens flare"
+
+    @classmethod
+    def poll(cls, context):
+        return bpy.ops.render.lens_flare_ogl_render.poll()
 
     def execute(self, context):
         start = context.scene.frame_start
