@@ -132,7 +132,7 @@ class OGLRenderOperator(bpy.types.Operator):
         buffer, draw_calls = ogl.render_lens_flare(props)
 
         props.image.scale(props.resolution_x, props.resolution_y)
-        props.image.pixels = [v for v in buffer]
+        props.image.pixels.foreach_set(buffer)
 
         end_time = time.perf_counter()
         self.report({'INFO'}, f"Lens flare total render time: {end_time - start_time}")

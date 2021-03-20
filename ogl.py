@@ -44,6 +44,8 @@ def render_lens_flare(props: MasterProperties):
 
     draw_count = 0
 
+    spectrum_total = integrate_spectrum(bpy.data.images['spectral.png'])
+
     # clear framebuffer
     with offscreen.bind():
         # black background
@@ -119,7 +121,8 @@ def render_lens_flare(props: MasterProperties):
                 copy_uniforms = {
                     "ghost": 0,
                     "spectral": 1,
-                    "dispersion": ghost.dispersion
+                    "dispersion": ghost.dispersion,
+                    "spectrum_total": spectrum_total,
                 }
 
                 set_uniforms(copy_shader, copy_uniforms)
@@ -210,3 +213,20 @@ def set_uniforms(shader: gpu.types.GPUShader, uniforms: Dict[str, Any]):
     """
     for name, uniform in uniforms.items():
         shader.uniform_float(name, uniform)
+
+
+def integrate_spectrum(image: bpy.types.Image) -> Vector:
+    """
+    Computes total brightness of ghost based on spectrum image
+    :returns: total brightness vector
+    """
+    i = Vector((0.0, 0.0, 0.0))
+    for x in range(image.size[0]):
+        r = image.pixels[x * 4]
+        g = image.pixels[x * 4 + 1]
+        b = image.pixels[x * 4 + 2]
+        i.x += r
+        i.y += g
+        i.z += b
+    i /= image.size[0]
+    return i
