@@ -42,6 +42,8 @@ def render_lens_flare(props: MasterProperties):
 
     copy_shader = gpu.types.GPUShader(shaders.vertex_shader_quad, shaders.fragment_shader_copy_ca)
 
+    draw_count = 0
+
     # clear framebuffer
     with offscreen.bind():
         # black background
@@ -98,6 +100,7 @@ def render_lens_flare(props: MasterProperties):
                 set_uniforms(ghost_shader, ghost_uniforms)
 
                 ghost_batch.draw(ghost_shader)
+                draw_count += 1
 
         with offscreen.bind():
             # now copy to final buffer
@@ -123,10 +126,12 @@ def render_lens_flare(props: MasterProperties):
                 copy_shader.uniform_int("samples", props.dispersion_samples)
 
                 flare_batch.draw(copy_shader)
+                draw_count += 1
 
     # finally render flare on top
     with offscreen.bind():
         render_flare(props, flare_shader, flare_batch)
+        draw_count += 1
 
         # copy rendered image to RAM
         buffer = bgl.Buffer(bgl.GL_FLOAT, max_x * max_y * 4)
@@ -136,7 +141,7 @@ def render_lens_flare(props: MasterProperties):
     offscreen.free()
     ghost_fb.free()
 
-    return buffer
+    return buffer, draw_count
 
 
 def render_flare(props: MasterProperties, flare_shader, flare_batch):

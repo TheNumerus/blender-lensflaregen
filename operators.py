@@ -129,13 +129,14 @@ class OGLRenderOperator(bpy.types.Operator):
         spectral_img = bpy.data.images.load(img_path, check_existing=True)
         spectral_img.gl_load()
 
-        buffer = ogl.render_lens_flare(props)
+        buffer, draw_calls = ogl.render_lens_flare(props)
 
         props.image.scale(props.resolution_x, props.resolution_y)
         props.image.pixels = [v for v in buffer]
 
         end_time = time.perf_counter()
         self.report({'INFO'}, f"Lens flare total render time: {end_time - start_time}")
+        self.report({'INFO'}, f"Lens flare draw calls: {draw_calls}")
 
         refresh_compositor()
 
