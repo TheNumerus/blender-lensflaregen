@@ -105,7 +105,8 @@ class GhostsPanel(bpy.types.Panel):
         col.operator("lens_flare.add_ghost", icon='ADD', text="")
         remove_op = col.operator('lens_flare.remove_ghost', text='', icon='REMOVE')
         remove_op.remove_id = props.selected_ghost
-        col.operator('lens_flare.duplicate_ghost', icon='DUPLICATE', text="")
+        duplicate_op = col.operator('lens_flare.duplicate_ghost', text='', icon='DUPLICATE')
+        duplicate_op.duplicate_id = props.selected_ghost
 
         layout.use_property_split = True
         layout.separator()
@@ -129,6 +130,9 @@ class GhostsPanel(bpy.types.Panel):
 
             col = layout.column(align=True)
             col.prop(ghost, 'size', text='Size')
+
+            col = layout.column(align=True)
+            col.prop(ghost, 'dispersion', text='Dispersion')
 
             col = layout.column(align=True)
             col.prop(ghost, 'transparent_center', text='Transparent Center')
@@ -176,6 +180,9 @@ class MiscPanel(bpy.types.Panel):
 
         col = layout.column(align=True)
         col.prop(props, 'debug_pos', text='Debug Cross')
+
+        col = layout.column(align=True)
+        col.prop(props, 'dispersion_samples', text='Dispersion Samples')
 
 
 def regenerate_ghost_icons():

@@ -1,11 +1,8 @@
-import math
 import time
-
-from gpu_extras.batch import batch_for_shader
-from mathutils import Matrix, Vector
+import os
 
 from .properties import *
-from . import image_processing, shaders
+from . import image_processing, ogl
 
 
 class AddGhostOperator(bpy.types.Operator):
@@ -24,9 +21,18 @@ class AddGhostOperator(bpy.types.Operator):
 class RemoveGhostOperator(bpy.types.Operator):
     bl_label = "Delete ghost"
     bl_idname = "lens_flare.remove_ghost"
-    bl_description = "Removes active ghost"
+    bl_description = "Removes ghost"
 
     remove_id: bpy.props.IntProperty(default=-1, description="Index of ghost to remove")
+
+    @classmethod
+    def poll(cls, context):
+        props: MasterProperties = context.scene.lens_flare_props
+
+        if len(props.ghosts) == 0:
+            return False
+
+        return True
 
     def execute(self, context):
         props: MasterProperties = context.scene.lens_flare_props
@@ -49,25 +55,36 @@ class DuplicateGhostOperator(bpy.types.Operator):
     bl_idname = "lens_flare.duplicate_ghost"
     bl_description = "Creates new ghost with same values as the active ghost"
 
+    duplicate_id: bpy.props.IntProperty(default=-1, description="Index of ghost to duplicate")
+
+    @classmethod
+    def poll(cls, context):
+        props: MasterProperties = context.scene.lens_flare_props
+
+        if len(props.ghosts) == 0:
+            return False
+
+        return True
+
     def execute(self, context):
         props: MasterProperties = context.scene.lens_flare_props
 
-        self.report({'INFO'}, "TEST_PRE")
+        if self.duplicate_id == -1:
+            self.report({'ERROR_INVALID_INPUT'}, "Invalid ID of ghost to duplicate")
+            return {'CANCELLED'}
 
-        active_ghost: GhostProperties = props.ghosts[props.selected_ghost]
-
-        self.report({'INFO'}, "TEST")
-
-        # TODO clean-up
         new_ghost: GhostProperties = props.ghosts.add()
 
-        new_ghost.color = active_ghost.color
-        new_ghost.intensity = active_ghost.intensity
-        new_ghost.name = active_ghost.name
-        new_ghost.offset = active_ghost.offset
-        new_ghost.perpendicular_offset = active_ghost.perpendicular_offset
-        new_ghost.size = active_ghost.size
-        new_ghost.transparent_center = active_ghost.transparent_center
+        # TODO clean-up
+        # for some reason, this crashes when `props.ghosts[self.duplicate_id]` is in temp variable
+        new_ghost.color = props.ghosts[self.duplicate_id].color
+        new_ghost.intensity = props.ghosts[self.duplicate_id].intensity
+        new_ghost.name = props.ghosts[self.duplicate_id].name
+        new_ghost.offset = props.ghosts[self.duplicate_id].offset
+        new_ghost.perpendicular_offset = props.ghosts[self.duplicate_id].perpendicular_offset
+        new_ghost.size = props.ghosts[self.duplicate_id].size
+        new_ghost.transparent_center = props.ghosts[self.duplicate_id].transparent_center
+        new_ghost.dispersion = props.ghosts[self.duplicate_id].dispersion
 
         return {'FINISHED'}
 
@@ -77,23 +94,25 @@ class OGLRenderOperator(bpy.types.Operator):
     bl_idname = "render.lens_flare_ogl_render"
     bl_description = "Renders lens flare into selected image"
 
+    @classmethod
+    def poll(cls, context):
+        props: MasterProperties = context.scene.lens_flare_props
+        if props.camera.use_override:
+            return props.image is not None
+        else:
+            return props.image is not None and context.scene.camera is not None
+
     def execute(self, context):
         props: MasterProperties = context.scene.lens_flare_props
 
-        import gpu
-        import bgl
-
         start_time = time.perf_counter()
 
-        if props.image is None:
-            self.report({'ERROR_INVALID_INPUT'}, "No image selected")
-            return {'CANCELLED'}
-
-        try:
-            blades, rotation = camera_settings(context)
-        except Exception as e:
-            self.report({'ERROR_INVALID_INPUT'}, e.args[0])
-            return {'CANCELLED'}
+        # set values from camera
+        if not props.camera.use_override:
+            camera = bpy.context.scene.camera
+            camera = bpy.data.cameras[camera.name]
+            props.camera.rotation = camera.dof.aperture_rotation
+            props.camera.blades = camera.dof.aperture_blades
 
         # handle debug cross
         if props.debug_pos:
@@ -106,103 +125,18 @@ class OGLRenderOperator(bpy.types.Operator):
 
             return {'FINISHED'}
 
-        max_x = props.resolution_x
-        max_y = props.resolution_y
+        img_path = os.path.join(os.path.dirname(__file__), 'images/spectral.png')
+        spectral_img = bpy.data.images.load(img_path, check_existing=True)
+        spectral_img.gl_load()
 
-        ratio = max_x / max_y
+        buffer, draw_calls = ogl.render_lens_flare(props)
 
-        if blades == 0:
-            blades = 64
-
-        (flare_vector_x, flare_vector_y) = (props.position_x - 0.5, props.position_y - 0.5);
-        flare_vector_len = math.sqrt(pow(flare_vector_x, 2) + pow(flare_vector_y, 2) + 0.0001)
-        flare_vector_x /= flare_vector_len
-        flare_vector_y /= flare_vector_len
-
-        offscreen = gpu.types.GPUOffScreen(max_x, max_y)
-
-        ghost_shader = gpu.types.GPUShader(shaders.vertex_shader_ghost, shaders.fragment_shader_ghost)
-        ghost_batch = batch_from_blades(blades, ghost_shader)
-
-        flare_shader = gpu.types.GPUShader(shaders.vertex_shader_quad, shaders.fragment_shader_flare)
-        flare_batch = batch_quad(flare_shader)
-
-        with offscreen.bind():
-            # black background
-            bgl.glClearColor(0.0, 0.0, 0.0, 1.0)
-            bgl.glClear(bgl.GL_COLOR_BUFFER_BIT)
-            bgl.glEnable(bgl.GL_BLEND)
-            bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE)
-
-            with gpu.matrix.push_pop():
-                # reset matrices
-                gpu.matrix.load_matrix(Matrix.Identity(4))
-                gpu.matrix.load_projection_matrix(Matrix.Identity(4))
-
-                # render glare
-                flare_color = Vector((props.flare.color[0], props.flare.color[1], props.flare.color[2], 1.0))
-                flare_position = Vector((props.position_x, props.position_y))
-                flare_rays = 0.0
-                if props.flare.rays:
-                    flare_rays = 1.0 * props.flare.rays_intensity
-                flare_shader.bind()
-
-                flare_shader.uniform_float("color", flare_color)
-                flare_shader.uniform_float("size", props.flare.size)
-                flare_shader.uniform_float("intensity", props.flare.intensity)
-                flare_shader.uniform_float("flare_position", flare_position)
-                flare_shader.uniform_float("aspect_ratio", ratio)
-                flare_shader.uniform_float("blades", float(blades))
-                flare_shader.uniform_float("use_rays", flare_rays)
-                flare_shader.uniform_float("rotation", rotation)
-                flare_shader.uniform_float("master_intensity", props.master_intensity)
-
-                flare_batch.draw(flare_shader)
-
-                # draw ghosts
-                ghost_shader.bind()
-                # fix aspect ratio
-                ghost_shader.uniform_float("aspect_ratio", ratio)
-                for ghost in props.ghosts:
-                    # calculate position
-                    ghost_x = ((props.position_x - 0.5) * 2.0) * ghost.offset
-                    ghost_y = ((props.position_y - 0.5) * 2.0) * ghost.offset
-                    # add perpendicular offset
-                    ghost_x += flare_vector_y * ghost.perpendicular_offset
-                    ghost_y += -flare_vector_x * ghost.perpendicular_offset
-
-                    # transform matrix
-                    model_matrix = Matrix.Translation((ghost_x, ghost_y, 0.0)) @ Matrix.Scale(ghost.size / 100, 4)
-                    # transparency
-                    center_transparency = 0.0
-                    if ghost.transparent_center:
-                        center_transparency = 1.0
-
-                    # move and scale ghosts
-                    ghost_shader.uniform_float("modelMatrix", model_matrix)
-                    # rotate ghost
-                    ghost_shader.uniform_float("rotationMatrix", Matrix.Rotation(rotation, 4, 'Z'))
-                    # set color
-                    ghost_shader.uniform_float("color", Vector((ghost.color[0], ghost.color[1], ghost.color[2], 1)))
-                    ghost_shader.uniform_float("master_intensity", props.master_intensity)
-                    ghost_shader.uniform_float("intensity", ghost.intensity)
-                    # set centers
-                    ghost_shader.uniform_float("empty", center_transparency)
-
-                    ghost_batch.draw(ghost_shader)
-
-            # copy rendered image to RAM
-            buffer = bgl.Buffer(bgl.GL_FLOAT, max_x * max_y * 4)
-            bgl.glReadBuffer(bgl.GL_BACK)
-            bgl.glReadPixels(0, 0, max_x, max_y, bgl.GL_RGBA, bgl.GL_FLOAT, buffer)
-
-        offscreen.free()
-
-        props.image.scale(max_x, max_y)
-        props.image.pixels = [v for v in buffer]
+        props.image.scale(props.resolution_x, props.resolution_y)
+        props.image.pixels.foreach_set(buffer)
 
         end_time = time.perf_counter()
         self.report({'INFO'}, f"Lens flare total render time: {end_time - start_time}")
+        self.report({'INFO'}, f"Lens flare draw calls: {draw_calls}")
 
         refresh_compositor()
 
@@ -213,6 +147,10 @@ class RenderAnimationOperator(bpy.types.Operator):
     bl_label = "Render Lens Flare Animation"
     bl_idname = "render.lens_flare_anim"
     bl_description = "Renders animation with lens flare"
+
+    @classmethod
+    def poll(cls, context):
+        return bpy.ops.render.lens_flare_ogl_render.poll()
 
     def execute(self, context):
         start = context.scene.frame_start
@@ -240,47 +178,6 @@ class RenderAnimationOperator(bpy.types.Operator):
 
 
 # Operator helpers
-def camera_settings(context):
-    """
-    Returns camera aperture shape and rotation from active camera, or from override
-    :return: blades, rotation
-    """
-    props: MasterProperties = context.scene.lens_flare_props
-
-    # get camera settings from active camera if no override
-    if not props.camera.use_override:
-        camera = bpy.context.scene.camera
-        if camera is None:
-            raise Exception("No camera is active")
-        camera = bpy.data.cameras[camera.name]
-
-        return camera.dof.aperture_blades, camera.dof.aperture_rotation
-
-    return props.camera.blades, props.camera.rotation
-
-
-def batch_from_blades(blades: int, shader):
-    positions = [(0.0,  0.0)]
-    colors = [(0.0, 0.0, 0.0, 1.0)]
-
-    start = Vector((1.0, 0.0))
-
-    # we need one point twice
-    for i in range(blades + 1):
-        positions.append((start.x, start.y))
-        colors.append((1.0, 1.0, 1.0, 1.0))
-        start.rotate(Matrix.Rotation(math.radians(360 / blades), 2))
-
-    return batch_for_shader(shader, 'TRI_FAN', {"position": tuple(positions), "vertColor": tuple(colors)})
-
-
-def batch_quad(shader):
-    positions = [(-1.0, -1.0), (-1.0, 1.0), (1.0, -1.0), (1.0, 1.0)]
-    uv = [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0)]
-
-    return batch_for_shader(shader, 'TRI_STRIP', {"position": tuple(positions), "uv": tuple(uv)})
-
-
 def refresh_compositor():
     """
     Quick and dirty way to refresh compositor. Adds new node and immediately removes it.
