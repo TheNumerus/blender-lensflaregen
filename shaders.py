@@ -126,9 +126,16 @@ fragment_shader_copy_ca = '''
     }
 
     void main() {
+        int s = samples;
+        if (abs(dispersion - 1.0) < 0.001) {
+            // don't use so many samples on ghosts without dispersion
+            s /= 2;
+            s = max(s, 8);
+        }
+    
         vec3 color = vec3(0.0);
-        for (int i = 0; i < samples; ++i) {
-            float x = float(i) / float(samples);
+        for (int i = 0; i < s; ++i) {
+            float x = float(i) / float(s);
             vec4 spectral_tex = texture(spectral, vec2(x, x));
             
             float sample_dispersion = (x - 0.5) * 2.0 * (dispersion  - 1.0) + 1.0;
@@ -138,7 +145,7 @@ fragment_shader_copy_ca = '''
             color += ghost_color.rgb * spectral_tex.rgb;
         }
         
-        color /= float(samples);
+        color /= float(s);
         
         FragColor = vec4(color, 1.0);
     }
