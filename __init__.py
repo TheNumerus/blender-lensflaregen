@@ -42,6 +42,7 @@ _classes = [
     operators.RemoveGhostOperator,
     operators.DuplicateGhostOperator,
     operators.OGLRenderOperator,
+    operators.LoadDefaultSpectrumImageOperator,
     operators.RenderAnimationOperator,
 ]
 

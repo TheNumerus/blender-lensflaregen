@@ -140,7 +140,7 @@ class CameraProperties(bpy.types.PropertyGroup):
     use_override: bpy.props.BoolProperty(
         name="Camera Override",
         description="Use custom camera properties",
-        default=True,
+        default=False,
     )
     blades: bpy.props.IntProperty(
         name="Aperture Blades",
@@ -182,6 +182,7 @@ class ResolutionProperties(bpy.types.PropertyGroup):
         min=0,
         subtype='PIXEL',
     )
+
 
 class MasterProperties(bpy.types.PropertyGroup):
     position_x: FloatProperty(
@@ -237,6 +238,11 @@ class MasterProperties(bpy.types.PropertyGroup):
     selected_ghost: IntProperty(
         name="Active ghost number",
         min=0,
+    )
+    spectrum_image: PointerProperty(
+        name="Spectrum Image",
+        description="Image of spectrum dispersion",
+        type=bpy.types.Image,
     )
     # debug props
     debug_pos: BoolProperty(

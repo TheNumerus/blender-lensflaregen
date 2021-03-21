@@ -44,7 +44,7 @@ def render_lens_flare(props: MasterProperties):
 
     draw_count = 0
 
-    spectrum_total = integrate_spectrum(bpy.data.images['spectral.png'])
+    spectrum_total = integrate_spectrum(props.spectrum_image)
 
     # clear framebuffer
     with offscreen.bind():

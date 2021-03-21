@@ -44,6 +44,7 @@ class ResolutionPanel(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = 'Lens Flares'
     bl_parent_id = "LF_PT_MainSettings"
+    bl_options = {'DEFAULT_CLOSED'}
 
     def draw_header(self, context):
         layout = self.layout
@@ -199,10 +200,14 @@ class MiscPanel(bpy.types.Panel):
         props = context.scene.lens_flare_props
 
         col = layout.column(align=True)
-        col.prop(props, 'debug_pos', text='Debug Cross')
+        col.prop(props, 'dispersion_samples', text='Dispersion Samples')
+
+        row = layout.row()
+        row.prop(props, 'spectrum_image', text='Spectrum Image')
+        row.operator('lens_flare.load_default_spectrum_image', text='', icon='FILE_IMAGE')
 
         col = layout.column(align=True)
-        col.prop(props, 'dispersion_samples', text='Dispersion Samples')
+        col.prop(props, 'debug_pos', text='Render Debug Cross')
 
 
 def regenerate_ghost_icons():
