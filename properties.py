@@ -162,20 +162,11 @@ class CameraProperties(bpy.types.PropertyGroup):
     )
 
 
-class MasterProperties(bpy.types.PropertyGroup):
-    position_x: FloatProperty(
-        name="X",
-        description="Position of light source on X axis",
-        default=0.5,
-        soft_min=0.0,
-        soft_max=1.0,
-    )
-    position_y: FloatProperty(
-        name="Y",
-        description="Position of light source on X axis",
-        default=0.5,
-        soft_min=0.0,
-        soft_max=1.0,
+class ResolutionProperties(bpy.types.PropertyGroup):
+    override_scene_resolution: BoolProperty(
+        name="Resolution override",
+        description="Use custom resolution for effect",
+        default=False,
     )
     resolution_x: IntProperty(
         name="Resolution X",
@@ -190,6 +181,22 @@ class MasterProperties(bpy.types.PropertyGroup):
         default=720,
         min=0,
         subtype='PIXEL',
+    )
+
+class MasterProperties(bpy.types.PropertyGroup):
+    position_x: FloatProperty(
+        name="X",
+        description="Position of light source on X axis",
+        default=0.5,
+        soft_min=0.0,
+        soft_max=1.0,
+    )
+    position_y: FloatProperty(
+        name="Y",
+        description="Position of light source on X axis",
+        default=0.5,
+        soft_min=0.0,
+        soft_max=1.0,
     )
     image: PointerProperty(
         name="Image",
@@ -217,6 +224,10 @@ class MasterProperties(bpy.types.PropertyGroup):
     camera: PointerProperty(
         name="Camera",
         type=CameraProperties,
+    )
+    resolution: PointerProperty(
+        name="Resolution",
+        type=ResolutionProperties,
     )
     # ghost props
     ghosts: CollectionProperty(

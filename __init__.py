@@ -27,10 +27,12 @@ _classes = [
     properties.FlareProperties,
     properties.GhostProperties,
     properties.CameraProperties,
+    properties.ResolutionProperties,
     properties.MasterProperties,
     # panels
     panels.GhostsUiList,
     panels.MainSettingsPanel,
+    panels.ResolutionPanel,
     panels.FlareSettingsPanel,
     panels.GhostsPanel,
     panels.CameraOverridePanel,

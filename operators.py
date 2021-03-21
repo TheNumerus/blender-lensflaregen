@@ -114,6 +114,11 @@ class OGLRenderOperator(bpy.types.Operator):
             props.camera.rotation = camera.dof.aperture_rotation
             props.camera.blades = camera.dof.aperture_blades
 
+        # set values from scene
+        if not props.resolution.override_scene_resolution:
+            props.resolution.resolution_x = bpy.context.scene.render.resolution_x
+            props.resolution.resolution_y = bpy.context.scene.render.resolution_y
+
         # handle debug cross
         if props.debug_pos:
             image_processing.draw_debug_cross(props)
@@ -131,7 +136,7 @@ class OGLRenderOperator(bpy.types.Operator):
 
         buffer, draw_calls = ogl.render_lens_flare(props)
 
-        props.image.scale(props.resolution_x, props.resolution_y)
+        props.image.scale(props.resolution.resolution_x, props.resolution.resolution_y)
         props.image.pixels.foreach_set(buffer)
 
         end_time = time.perf_counter()

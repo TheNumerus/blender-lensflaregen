@@ -30,15 +30,35 @@ class MainSettingsPanel(bpy.types.Panel):
         row.operator('image.new', text='', icon='ADD')
 
         col = layout.column(align=True)
-        col.prop(props, "resolution_x", text="Resolution X")
-        col.prop(props, "resolution_y", text="Y")
-
-        col = layout.column(align=True)
         col.prop(props, "position_x", text="Effect Position X")
         col.prop(props, "position_y", text="Y")
 
         col = layout.column(align=True)
         col.prop(props, "master_intensity", text="Master Intensity")
+
+
+class ResolutionPanel(bpy.types.Panel):
+    bl_label = "Custom Resolution"
+    bl_idname = "LF_PT_ResolutionSettings"
+    bl_space_type = 'NODE_EDITOR'
+    bl_region_type = 'UI'
+    bl_category = 'Lens Flares'
+    bl_parent_id = "LF_PT_MainSettings"
+
+    def draw_header(self, context):
+        layout = self.layout
+        props: MasterProperties = context.scene.lens_flare_props.resolution
+        layout.prop(props, 'override_scene_resolution', text='')
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        props: MasterProperties = context.scene.lens_flare_props.resolution
+
+        col = layout.column(align=True)
+        col.prop(props, "resolution_x", text="Resolution X")
+        col.prop(props, "resolution_y", text="Y")
 
 
 class FlareSettingsPanel(bpy.types.Panel):
