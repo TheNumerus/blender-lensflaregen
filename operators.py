@@ -109,10 +109,15 @@ class OGLRenderOperator(bpy.types.Operator):
 
         # set values from camera
         if not props.camera.use_override:
-            camera = bpy.context.scene.camera
+            camera = context.scene.camera
             camera = bpy.data.cameras[camera.name]
             props.camera.rotation = camera.dof.aperture_rotation
             props.camera.blades = camera.dof.aperture_blades
+
+        # set values from scene
+        if not props.resolution.override_scene_resolution:
+            props.resolution.resolution_x = context.scene.render.resolution_x
+            props.resolution.resolution_y = context.scene.render.resolution_y
 
         # handle debug cross
         if props.debug_pos:
@@ -125,13 +130,13 @@ class OGLRenderOperator(bpy.types.Operator):
 
             return {'FINISHED'}
 
-        img_path = os.path.join(os.path.dirname(__file__), 'images/spectral.png')
-        spectral_img = bpy.data.images.load(img_path, check_existing=True)
-        spectral_img.gl_load()
+        # load default if none is specified
+        if props.spectrum_image is None:
+            bpy.ops.lens_flare.load_default_spectrum_image()
 
         buffer, draw_calls = ogl.render_lens_flare(props)
 
-        props.image.scale(props.resolution_x, props.resolution_y)
+        props.image.scale(props.resolution.resolution_x, props.resolution.resolution_y)
         props.image.pixels.foreach_set(buffer)
 
         end_time = time.perf_counter()
@@ -173,6 +178,22 @@ class RenderAnimationOperator(bpy.types.Operator):
                 break
 
         bpy.context.scene.render.filepath = filepath_base
+
+        return {'FINISHED'}
+
+
+class LoadDefaultSpectrumImageOperator(bpy.types.Operator):
+    bl_label = "Load Default Spectrum Image"
+    bl_idname = "lens_flare.load_default_spectrum_image"
+    bl_description = "Loads default spectrum image"
+
+    def execute(self, context):
+        props: MasterProperties = context.scene.lens_flare_props
+
+        img_path = os.path.join(os.path.dirname(__file__), 'images/spectral.png')
+        spectral_img = bpy.data.images.load(img_path, check_existing=True)
+        spectral_img.gl_load()
+        props.spectrum_image = spectral_img
 
         return {'FINISHED'}
 

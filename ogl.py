@@ -16,8 +16,8 @@ def render_lens_flare(props: MasterProperties):
     Renders lens flare effect to buffer
     :returns buffer with effect
     """
-    max_x = props.resolution_x
-    max_y = props.resolution_y
+    max_x = props.resolution.resolution_x
+    max_y = props.resolution.resolution_y
 
     ratio = max_x / max_y
 
@@ -44,7 +44,7 @@ def render_lens_flare(props: MasterProperties):
 
     draw_count = 0
 
-    spectrum_total = integrate_spectrum(bpy.data.images['spectral.png'])
+    spectrum_total = integrate_spectrum(props.spectrum_image)
 
     # clear framebuffer
     with offscreen.bind():
@@ -163,7 +163,7 @@ def render_flare(props: MasterProperties, flare_shader, flare_batch):
         if props.flare.rays:
             flare_rays = 1.0 * props.flare.rays_intensity
 
-        ratio = props.resolution_x / props.resolution_y
+        ratio = props.resolution.resolution_x / props.resolution.resolution_y
         flare_shader.bind()
 
         flare_uniforms = {

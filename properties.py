@@ -140,7 +140,7 @@ class CameraProperties(bpy.types.PropertyGroup):
     use_override: bpy.props.BoolProperty(
         name="Camera Override",
         description="Use custom camera properties",
-        default=True,
+        default=False,
     )
     blades: bpy.props.IntProperty(
         name="Aperture Blades",
@@ -162,20 +162,11 @@ class CameraProperties(bpy.types.PropertyGroup):
     )
 
 
-class MasterProperties(bpy.types.PropertyGroup):
-    position_x: FloatProperty(
-        name="X",
-        description="Position of light source on X axis",
-        default=0.5,
-        soft_min=0.0,
-        soft_max=1.0,
-    )
-    position_y: FloatProperty(
-        name="Y",
-        description="Position of light source on X axis",
-        default=0.5,
-        soft_min=0.0,
-        soft_max=1.0,
+class ResolutionProperties(bpy.types.PropertyGroup):
+    override_scene_resolution: BoolProperty(
+        name="Resolution override",
+        description="Use custom resolution for effect",
+        default=False,
     )
     resolution_x: IntProperty(
         name="Resolution X",
@@ -190,6 +181,23 @@ class MasterProperties(bpy.types.PropertyGroup):
         default=720,
         min=0,
         subtype='PIXEL',
+    )
+
+
+class MasterProperties(bpy.types.PropertyGroup):
+    position_x: FloatProperty(
+        name="X",
+        description="Position of light source on X axis",
+        default=0.5,
+        soft_min=0.0,
+        soft_max=1.0,
+    )
+    position_y: FloatProperty(
+        name="Y",
+        description="Position of light source on X axis",
+        default=0.5,
+        soft_min=0.0,
+        soft_max=1.0,
     )
     image: PointerProperty(
         name="Image",
@@ -218,6 +226,10 @@ class MasterProperties(bpy.types.PropertyGroup):
         name="Camera",
         type=CameraProperties,
     )
+    resolution: PointerProperty(
+        name="Resolution",
+        type=ResolutionProperties,
+    )
     # ghost props
     ghosts: CollectionProperty(
         name="Ghosts",
@@ -226,6 +238,11 @@ class MasterProperties(bpy.types.PropertyGroup):
     selected_ghost: IntProperty(
         name="Active ghost number",
         min=0,
+    )
+    spectrum_image: PointerProperty(
+        name="Spectrum Image",
+        description="Image of spectrum dispersion",
+        type=bpy.types.Image,
     )
     # debug props
     debug_pos: BoolProperty(

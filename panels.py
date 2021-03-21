@@ -26,12 +26,7 @@ class MainSettingsPanel(bpy.types.Panel):
         row.operator('render.lens_flare_anim', icon='RENDER_ANIMATION')
 
         row = layout.row()
-        row.prop(props, 'image')
-        row.operator('image.new', text='', icon='ADD')
-
-        col = layout.column(align=True)
-        col.prop(props, "resolution_x", text="Resolution X")
-        col.prop(props, "resolution_y", text="Y")
+        row.template_ID(props, 'image', new="image.new", text='Output Image')
 
         col = layout.column(align=True)
         col.prop(props, "position_x", text="Effect Position X")
@@ -39,6 +34,31 @@ class MainSettingsPanel(bpy.types.Panel):
 
         col = layout.column(align=True)
         col.prop(props, "master_intensity", text="Master Intensity")
+
+
+class ResolutionPanel(bpy.types.Panel):
+    bl_label = "Custom Resolution"
+    bl_idname = "LF_PT_ResolutionSettings"
+    bl_space_type = 'NODE_EDITOR'
+    bl_region_type = 'UI'
+    bl_category = 'Lens Flares'
+    bl_parent_id = "LF_PT_MainSettings"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw_header(self, context):
+        layout = self.layout
+        props: MasterProperties = context.scene.lens_flare_props.resolution
+        layout.prop(props, 'override_scene_resolution', text='')
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        props: MasterProperties = context.scene.lens_flare_props.resolution
+
+        col = layout.column(align=True)
+        col.prop(props, "resolution_x", text="Resolution X")
+        col.prop(props, "resolution_y", text="Y")
 
 
 class FlareSettingsPanel(bpy.types.Panel):
@@ -179,10 +199,14 @@ class MiscPanel(bpy.types.Panel):
         props = context.scene.lens_flare_props
 
         col = layout.column(align=True)
-        col.prop(props, 'debug_pos', text='Debug Cross')
+        col.prop(props, 'dispersion_samples', text='Dispersion Samples')
+
+        row = layout.row()
+        row.prop(props, 'spectrum_image', text='Spectrum Image')
+        row.operator('lens_flare.load_default_spectrum_image', text='', icon='FILE_IMAGE')
 
         col = layout.column(align=True)
-        col.prop(props, 'dispersion_samples', text='Dispersion Samples')
+        col.prop(props, 'debug_pos', text='Render Debug Cross')
 
 
 def regenerate_ghost_icons():
