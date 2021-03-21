@@ -26,8 +26,7 @@ class MainSettingsPanel(bpy.types.Panel):
         row.operator('render.lens_flare_anim', icon='RENDER_ANIMATION')
 
         row = layout.row()
-        row.prop(props, 'image')
-        row.operator('image.new', text='', icon='ADD')
+        row.template_ID(props, 'image', new="image.new", text='Output Image')
 
         col = layout.column(align=True)
         col.prop(props, "position_x", text="Effect Position X")
