@@ -134,6 +134,8 @@ class OGLRenderOperator(bpy.types.Operator):
         if props.spectrum_image is None:
             bpy.ops.lens_flare.load_default_spectrum_image()
 
+        props.spectrum_image.gl_load()
+
         buffer, draw_calls = ogl.render_lens_flare(props)
 
         props.image.scale(props.resolution.resolution_x, props.resolution.resolution_y)

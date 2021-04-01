@@ -91,8 +91,6 @@ def render_lens_flare(props: MasterProperties):
                     "rotationMatrix": Matrix.Rotation(props.camera.rotation, 4, 'Z'),
                     # set color and intensity
                     "color": Vector((ghost.color[0], ghost.color[1], ghost.color[2], 1)),
-                    "master_intensity": props.master_intensity,
-                    "intensity": ghost.intensity,
                     # set centers
                     "empty": center_transparency,
                     # aspect ratio of destination image
@@ -109,6 +107,14 @@ def render_lens_flare(props: MasterProperties):
             bgl.glActiveTexture(bgl.GL_TEXTURE0)
             bgl.glBindTexture(bgl.GL_TEXTURE_2D, ghost_fb.color_texture)
 
+            # disable wrapping
+            bgl.glTexParameterf(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_S, bgl.GL_CLAMP_TO_BORDER)
+            bgl.glTexParameterf(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_T, bgl.GL_CLAMP_TO_BORDER)
+
+            border_color = bgl.Buffer(bgl.GL_FLOAT, 4, [0.0, 0.0, 0.0, 1.0])
+
+            bgl.glTexParameterfv(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_BORDER_COLOR, border_color)
+
             bgl.glActiveTexture(bgl.GL_TEXTURE1)
             bgl.glBindTexture(bgl.GL_TEXTURE_2D, bpy.data.images['spectral.png'].bindcode)
 
@@ -123,6 +129,8 @@ def render_lens_flare(props: MasterProperties):
                     "spectral": 1,
                     "dispersion": ghost.dispersion,
                     "spectrum_total": spectrum_total,
+                    "master_intensity": props.master_intensity,
+                    "intensity": ghost.intensity,
                 }
 
                 set_uniforms(copy_shader, copy_uniforms)

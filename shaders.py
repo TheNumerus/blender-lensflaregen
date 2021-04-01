@@ -36,8 +36,6 @@ fragment_shader_ghost = '''
     #define E 2.71828
     uniform vec4 color;
     uniform float empty;
-    uniform float master_intensity;
-    uniform float intensity;
 
     in vec2 posInterp;
     in vec4 colorInterp;
@@ -48,7 +46,7 @@ fragment_shader_ghost = '''
         float center = sqrt(pow(posInterp.x, 2.0) + pow(posInterp.y, 2.0));
         float gauss = 0.4 * pow(E, -(pow(center, 2.0) / 0.3));
         float edge = (1.0 - pow(colorInterp.x, 40.0)) - (gauss * empty);
-        FragColor = vec4(color.xyz, edge) * master_intensity * intensity;
+        FragColor = vec4(color.xyz, edge);
     }
 '''
 
@@ -115,6 +113,8 @@ fragment_shader_copy_ca = '''
     uniform float dispersion;
     uniform int samples;
     uniform vec3 spectrum_total;
+    uniform float master_intensity;
+    uniform float intensity;
     
     in vec2 uvInterp;
     
@@ -147,6 +147,6 @@ fragment_shader_copy_ca = '''
         
         color /= float(samples);
         
-        FragColor = vec4(color, 1.0);
+        FragColor = vec4(color * intensity * master_intensity, 1.0);
     }
 '''
