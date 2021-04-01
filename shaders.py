@@ -129,7 +129,7 @@ fragment_shader_copy_ca = '''
     void main() {
         if (abs(dispersion - 1.0) < 0.001) {
             // use precalculated spetrum integral for total brightness
-            FragColor = vec4(texture(ghost, uvInterp).rgb * spectrum_total, 1.0);
+            FragColor = vec4(texture(ghost, uvInterp).rgb * spectrum_total * intensity * master_intensity, 1.0);
             return;
         }
     
