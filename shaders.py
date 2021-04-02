@@ -110,6 +110,7 @@ fragment_shader_flare = '''
 fragment_shader_copy_ca = '''
     uniform sampler2D ghost;
     uniform sampler2D spectral;
+    uniform sampler2D noise;
     uniform float dispersion;
     uniform int samples;
     uniform vec3 spectrum_total;
@@ -129,7 +130,8 @@ fragment_shader_copy_ca = '''
     void main() {
         if (abs(dispersion) < 0.001) {
             // use precalculated spetrum integral for total brightness
-            FragColor = vec4(texture(ghost, uvInterp).rgb * spectrum_total * intensity * master_intensity, 1.0);
+            FragColor = vec4(texture(ghost, uvInterp).rgb * spectrum_total * intensity * master_intensity , 1.0);
+            FragColor = texture(noise, uvInterp);
             return;
         }
     
@@ -147,6 +149,6 @@ fragment_shader_copy_ca = '''
         
         color /= float(samples);
         
-        FragColor = vec4(color * intensity * master_intensity, 1.0);
+        FragColor = vec4(color * intensity * master_intensity * texture(noise, uvInterp).rgb, 1.0);
     }
 '''

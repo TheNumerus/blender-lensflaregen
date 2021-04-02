@@ -1,4 +1,5 @@
 import math
+import random
 from typing import Any, Dict
 
 import gpu
@@ -45,6 +46,16 @@ def render_lens_flare(props: MasterProperties):
     draw_count = 0
 
     spectrum_total = integrate_spectrum(props.spectrum_image)
+
+    noise_buf = generate_noise_buffer()
+    noise_tex = bgl.Buffer(bgl.GL_INT, 1)
+    bgl.glGenTextures(1, noise_tex)
+    bgl.glBindTexture(bgl.GL_TEXTURE_2D, noise_tex.to_list()[0])
+    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_S, bgl.GL_REPEAT);
+    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_T, bgl.GL_REPEAT);
+    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_LINEAR);
+    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER, bgl.GL_LINEAR);
+    bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA32F, 64, 64, 0, bgl.GL_RGBA, bgl.GL_FLOAT, noise_buf)
 
     # clear framebuffer
     with offscreen.bind():
@@ -118,6 +129,9 @@ def render_lens_flare(props: MasterProperties):
             bgl.glActiveTexture(bgl.GL_TEXTURE1)
             bgl.glBindTexture(bgl.GL_TEXTURE_2D, bpy.data.images['spectral.png'].bindcode)
 
+            bgl.glActiveTexture(bgl.GL_TEXTURE2)
+            bgl.glBindTexture(bgl.GL_TEXTURE_2D, noise_tex.to_list()[0])
+
             with gpu.matrix.push_pop():
                 copy_shader.bind()
                 # reset matrices
@@ -127,6 +141,7 @@ def render_lens_flare(props: MasterProperties):
                 copy_uniforms = {
                     "ghost": 0,
                     "spectral": 1,
+                    "noise": 2,
                     "dispersion": ghost.dispersion,
                     "spectrum_total": spectrum_total,
                     "master_intensity": props.master_intensity,
@@ -148,6 +163,8 @@ def render_lens_flare(props: MasterProperties):
         buffer = bgl.Buffer(bgl.GL_FLOAT, max_x * max_y * 4)
         bgl.glReadBuffer(bgl.GL_BACK)
         bgl.glReadPixels(0, 0, max_x, max_y, bgl.GL_RGBA, bgl.GL_FLOAT, buffer)
+
+    bgl.glDeleteTextures(1, noise_tex)
 
     offscreen.free()
     ghost_fb.free()
@@ -238,3 +255,13 @@ def integrate_spectrum(image: bpy.types.Image) -> Vector:
         i.z += b
     i /= image.size[0]
     return i
+
+
+def generate_noise_buffer() -> bgl.Buffer:
+    values = []
+
+    for pixel in range(0, 64 * 64):
+        val = random.random()
+        values.extend([val, val, val, 1.0])
+
+    return bgl.Buffer(bgl.GL_FLOAT, 64 * 64 * 4, values)
