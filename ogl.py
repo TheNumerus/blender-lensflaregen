@@ -51,10 +51,12 @@ def render_lens_flare(props: MasterProperties):
     noise_tex = bgl.Buffer(bgl.GL_INT, 1)
     bgl.glGenTextures(1, noise_tex)
     bgl.glBindTexture(bgl.GL_TEXTURE_2D, noise_tex.to_list()[0])
-    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_S, bgl.GL_REPEAT);
-    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_T, bgl.GL_REPEAT);
-    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_LINEAR);
-    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER, bgl.GL_LINEAR);
+    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_S, bgl.GL_REPEAT)
+    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_T, bgl.GL_REPEAT)
+    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_LINEAR)
+    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER, bgl.GL_LINEAR)
+    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_BASE_LEVEL, 0)
+    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAX_LEVEL, 0)
     bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA32F, 64, 64, 0, bgl.GL_RGBA, bgl.GL_FLOAT, noise_buf)
 
     # clear framebuffer
@@ -126,10 +128,10 @@ def render_lens_flare(props: MasterProperties):
 
             bgl.glTexParameterfv(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_BORDER_COLOR, border_color)
 
-            bgl.glActiveTexture(bgl.GL_TEXTURE1)
+            bgl.glActiveTexture(bgl.GL_TEXTURE2)
             bgl.glBindTexture(bgl.GL_TEXTURE_2D, bpy.data.images['spectral.png'].bindcode)
 
-            bgl.glActiveTexture(bgl.GL_TEXTURE2)
+            bgl.glActiveTexture(bgl.GL_TEXTURE1)
             bgl.glBindTexture(bgl.GL_TEXTURE_2D, noise_tex.to_list()[0])
 
             with gpu.matrix.push_pop():
@@ -140,12 +142,13 @@ def render_lens_flare(props: MasterProperties):
 
                 copy_uniforms = {
                     "ghost": 0,
-                    "spectral": 1,
-                    "noise": 2,
+                    "spectral": 2,
+                    "noise": 1,
                     "dispersion": ghost.dispersion,
                     "spectrum_total": spectrum_total,
                     "master_intensity": props.master_intensity,
                     "intensity": ghost.intensity,
+                    "res": [props.resolution.resolution_x / 64, props.resolution.resolution_y / 64],
                 }
 
                 set_uniforms(copy_shader, copy_uniforms)
