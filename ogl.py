@@ -51,13 +51,9 @@ def render_lens_flare(props: MasterProperties):
     noise_tex = bgl.Buffer(bgl.GL_INT, 1)
     bgl.glGenTextures(1, noise_tex)
     bgl.glBindTexture(bgl.GL_TEXTURE_2D, noise_tex.to_list()[0])
-    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_S, bgl.GL_REPEAT)
-    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_T, bgl.GL_REPEAT)
+    bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA32F, 64, 64, 0, bgl.GL_RGBA, bgl.GL_FLOAT, noise_buf)
     bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_LINEAR)
     bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER, bgl.GL_LINEAR)
-    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_BASE_LEVEL, 0)
-    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAX_LEVEL, 0)
-    bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA32F, 64, 64, 0, bgl.GL_RGBA, bgl.GL_FLOAT, noise_buf)
 
     # clear framebuffer
     with offscreen.bind():
@@ -110,7 +106,7 @@ def render_lens_flare(props: MasterProperties):
                     "aspect_ratio": ratio,
                 }
 
-                set_uniforms(ghost_shader, ghost_uniforms)
+                set_float_uniforms(ghost_shader, ghost_uniforms)
 
                 ghost_batch.draw(ghost_shader)
                 draw_count += 1
@@ -140,10 +136,16 @@ def render_lens_flare(props: MasterProperties):
                 gpu.matrix.load_matrix(Matrix.Identity(4))
                 gpu.matrix.load_projection_matrix(Matrix.Identity(4))
 
-                copy_uniforms = {
+                copy_int_uniforms = {
                     "ghost": 0,
                     "spectral": 2,
                     "noise": 1,
+                    "samples": props.dispersion_samples,
+                }
+
+                set_int_uniforms(copy_shader, copy_int_uniforms)
+
+                copy_float_uniforms = {
                     "dispersion": ghost.dispersion,
                     "spectrum_total": spectrum_total,
                     "master_intensity": props.master_intensity,
@@ -152,8 +154,7 @@ def render_lens_flare(props: MasterProperties):
                     "use_jitter": 1.0,
                 }
 
-                set_uniforms(copy_shader, copy_uniforms)
-                copy_shader.uniform_int("samples", props.dispersion_samples)
+                set_float_uniforms(copy_shader, copy_float_uniforms)
 
                 flare_batch.draw(copy_shader)
                 draw_count += 1
@@ -207,7 +208,7 @@ def render_flare(props: MasterProperties, flare_shader, flare_batch):
             "master_intensity": props.master_intensity,
         }
 
-        set_uniforms(flare_shader, flare_uniforms)
+        set_float_uniforms(flare_shader, flare_uniforms)
 
         flare_batch.draw(flare_shader)
 
@@ -234,7 +235,7 @@ def batch_quad(shader):
     return batch_for_shader(shader, 'TRI_STRIP', {"position": tuple(positions), "uv": tuple(uv)})
 
 
-def set_uniforms(shader: gpu.types.GPUShader, uniforms: Dict[str, Any]):
+def set_float_uniforms(shader: gpu.types.GPUShader, uniforms: Dict[str, Any]):
     """
     Sets uniforms to shader.
     :param shader shader to set uniforms to
@@ -242,6 +243,16 @@ def set_uniforms(shader: gpu.types.GPUShader, uniforms: Dict[str, Any]):
     """
     for name, uniform in uniforms.items():
         shader.uniform_float(name, uniform)
+
+
+def set_int_uniforms(shader: gpu.types.GPUShader, uniforms: Dict[str, Any]):
+    """
+    Sets uniforms to shader.
+    :param shader shader to set uniforms to
+    :param uniforms dictionary of uniforms
+    """
+    for name, uniform in uniforms.items():
+        shader.uniform_int(name, uniform)
 
 
 def integrate_spectrum(image: bpy.types.Image) -> Vector:
