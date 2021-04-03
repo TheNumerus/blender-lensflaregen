@@ -161,6 +161,9 @@ def render_lens_flare(props: MasterProperties):
 
     # finally render flare on top
     with offscreen.bind():
+        bgl.glActiveTexture(bgl.GL_TEXTURE0)
+        bgl.glBindTexture(bgl.GL_TEXTURE_2D, noise_tex.to_list()[0])
+
         render_flare(props, flare_shader, flare_batch)
         draw_count += 1
 
@@ -206,9 +209,16 @@ def render_flare(props: MasterProperties, flare_shader, flare_batch):
             "use_rays": flare_rays,
             "rotation": props.camera.rotation,
             "master_intensity": props.master_intensity,
+            "res": [props.resolution.resolution_x / 64, props.resolution.resolution_y / 64],
         }
 
         set_float_uniforms(flare_shader, flare_uniforms)
+
+        flare_int_uniforms = {
+            "noise": 0
+        }
+
+        set_int_uniforms(flare_shader, flare_int_uniforms)
 
         flare_batch.draw(flare_shader)
 

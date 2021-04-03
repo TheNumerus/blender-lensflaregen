@@ -64,6 +64,8 @@ fragment_shader_flare = '''
     uniform float use_rays;
     uniform float rotation;
     uniform float master_intensity;
+    uniform vec2 res;
+    uniform sampler2D noise;
 
     in vec2 uvInterp;
 
@@ -102,7 +104,7 @@ fragment_shader_flare = '''
         
         float sum = (flare * intensity) + (rays_value * use_rays);
         
-        FragColor = vec4(sum, sum, sum, 1.0) * color * master_intensity;
+        FragColor = vec4(sum, sum, sum, 1.0) * color * master_intensity + texture(noise, uvInterp * res).r / 255.0;
     }
 '''
 
