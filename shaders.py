@@ -117,6 +117,7 @@ fragment_shader_copy_ca = '''
     uniform float master_intensity;
     uniform float intensity;
     uniform vec2 res;
+    uniform float use_jitter;
     
     in vec2 uvInterp;
     
@@ -137,7 +138,7 @@ fragment_shader_copy_ca = '''
     
         vec3 color = vec3(0.0);
         for (int i = 0; i < samples; ++i) {
-            float x = (float(i) + texture(noise, uvInterp * res).r) / float(samples);
+            float x = (float(i) + texture(noise, uvInterp * res).r * use_jitter) / float(samples);
             vec4 spectral_tex = texture(spectral, vec2(x, x));
             
             float sample_dispersion = (x - 0.5) * 2.0 * (dispersion) + 1.0;

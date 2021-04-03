@@ -149,6 +149,7 @@ def render_lens_flare(props: MasterProperties):
                     "master_intensity": props.master_intensity,
                     "intensity": ghost.intensity,
                     "res": [props.resolution.resolution_x / 64, props.resolution.resolution_y / 64],
+                    "use_jitter": 1.0,
                 }
 
                 set_uniforms(copy_shader, copy_uniforms)

@@ -14,6 +14,8 @@ if "bpy" in locals():
     importlib.reload(properties)
     importlib.reload(operators)
     importlib.reload(panels)
+    importlib.reload(ogl)
+    importlib.reload(shaders)
 else:
     from . import properties
     from . import operators
