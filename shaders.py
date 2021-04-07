@@ -78,20 +78,26 @@ fragment_shader_flare = '''
     }
     
     float rays(float distance, float norm_angle) {
-        float angle = fract(norm_angle * blades);
-        float ray_centers = 1.0 - abs(angle * 2.0 - 1.0);
-        ray_centers = pow(ray_centers, distance * 40.0) * max(1.0 - distance, 0.0);
+        float angle = norm_angle * 2.0 * PI * blades + PI;
+        float distance_limit = max(1.0 - distance, 0.0);
+        float ray_centers = pow(max(cos(angle), 0.0), 8.0) * distance_limit;
         
-        float rays_center = 2.0 * gauss(distance, 0.0, 0.02);
+        return ray_centers;
+    }
+    
+    float radial_noise(float dist, float angle) {
+        float rot = 0.1;
         
-        return ray_centers + rays_center;
+        mat2 noise_rot;
+        noise_rot[0] = vec2(-cos(rot), sin(rot));
+        noise_rot[1] = vec2(-sin(rot), cos(rot));
+        
+        return texture(noise, vec2(dist * 0.001, angle) * noise_rot * 5.0).r;
     }
 
     void main() {
         vec2 flare_base = uvInterp - flare_position;
         float dist = sqrt( pow(flare_base.x * aspect_ratio, 2.0) + pow(flare_base.y, 2.0) ); // [0.0; 1.0]
-        
-        float flare = intensity * gauss(dist, 0.0, size / 100.0);
         
         // angle component of polar coordinates
         float angle = acos(flare_base.x * aspect_ratio / dist);
@@ -100,22 +106,29 @@ fragment_shader_flare = '''
         }
         
         // normalize
+        angle += PI / 2.0;
         angle = ((angle + rotation) / (2.0 * PI));
         
-        float rays_value = rays(dist, angle); 
+        float rad_noise = radial_noise(dist, angle);
+    
+        float noise_ring_extrusion = mix(cos(angle * 2.0 * PI * blades + PI), 1.0, 0.95);
         
-        float sum = (flare * intensity) + (rays_value * use_rays);
+        float blade_count_to_ray_intensity = min(max((-blades + 18.0) / 12.0, 0.0), 1.0);
+        
+        float noise_ring_intensity = gauss(dist * noise_ring_extrusion, 0.21, 0.01);
+        float noise_ring = rad_noise * noise_ring_intensity;
+        
+        float flare = gauss(dist, 0.0, size / 100.0);
+        
+        float rays_value = mix(noise_ring, rays(dist, angle) * rad_noise, blade_count_to_ray_intensity);
+        
+        float ray_center = 2.0 * gauss(dist, 0.0, 0.02);
+        
+        float sum = (flare * intensity) + ((rays_value + ray_center) * use_rays);
         
         if (anamorphic > 0.5) {
-            float rot = 0.1;
-            
-            mat2 noise_rot;
-            noise_rot[0] = vec2(-cos(rot), sin(rot));
-            noise_rot[1] = vec2(-sin(rot), cos(rot));
-            
-            float radial_noise = texture(noise, vec2(dist * 0.01, angle) * noise_rot * 5.0).r;
-            float noise_ring = ((radial_noise - 0.5) * 0.2) * gauss(dist, 0.21, 0.01);
-            float anam_flare = (gauss(flare_base.x * aspect_ratio, 0.0, 0.01) * gauss(flare_base.y, 0.0, 0.01) + noise_ring) * intensity;
+            float anam_ring = (noise_ring - 0.5) * 0.2;
+            float anam_flare = (gauss(flare_base.x * aspect_ratio, 0.0, 0.01) * gauss(flare_base.y, 0.0, 0.01) + anam_ring) * intensity;
             
             float ray_distort = (1.0 - pow(anam_flare, 1.0) * 1.0);
             float ray_fade = pow(abs(min(pow(gauss(flare_base.x, 0.0, 1.0), 1.0), 1.0)), 0.5);
