@@ -85,6 +85,7 @@ class DuplicateGhostOperator(bpy.types.Operator):
         new_ghost.size = props.ghosts[self.duplicate_id].size
         new_ghost.transparent_center = props.ghosts[self.duplicate_id].transparent_center
         new_ghost.dispersion = props.ghosts[self.duplicate_id].dispersion
+        new_ghost.ratio = props.ghosts[self.duplicate_id].ratio
 
         return {'FINISHED'}
 

@@ -161,6 +161,9 @@ class GhostsPanel(bpy.types.Panel):
             col = layout.column(align=True)
             col.prop(ghost, 'transparent_center', text='Transparent Center')
 
+            col = layout.column(align=True)
+            col.prop(ghost, 'ratio', text='Aspect Ratio')
+
 
 class CameraOverridePanel(bpy.types.Panel):
     bl_label = "Camera Override"

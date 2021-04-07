@@ -11,6 +11,8 @@ from mathutils import Matrix, Vector
 from . import shaders
 from .properties import MasterProperties
 
+noise_buf = None
+
 
 def render_lens_flare(props: MasterProperties):
     """
@@ -104,6 +106,8 @@ def render_lens_flare(props: MasterProperties):
                     "empty": center_transparency,
                     # aspect ratio of destination image
                     "aspect_ratio": ratio,
+                    # anamorphic lens simulation
+                    "ratio": ghost.ratio,
                 }
 
                 set_float_uniforms(ghost_shader, ghost_uniforms)
@@ -288,10 +292,16 @@ def integrate_spectrum(image: bpy.types.Image) -> Vector:
 
 
 def generate_noise_buffer() -> bgl.Buffer:
+    global noise_buf
+
+    if noise_buf is not None:
+        return noise_buf
     values = []
 
     for pixel in range(0, 64 * 64):
         val = random.random()
         values.extend([val, val, val, 1.0])
 
-    return bgl.Buffer(bgl.GL_FLOAT, 64 * 64 * 4, values)
+    noise_buf = bgl.Buffer(bgl.GL_FLOAT, 64 * 64 * 4, values)
+
+    return noise_buf

@@ -3,6 +3,7 @@ vertex_shader_ghost = '''
     uniform mat4 modelMatrix;
     uniform mat4 rotationMatrix;
     uniform float aspect_ratio;
+    uniform float ratio;
 
     in vec2 position;
     in vec4 vertColor;
@@ -14,7 +15,7 @@ vertex_shader_ghost = '''
         posInterp = position;
         colorInterp = vertColor;
         vec4 pos_post_rotation = vec4(position, 0.0, 1.0) * rotationMatrix;
-        gl_Position = modelMatrix * vec4(pos_post_rotation.xy * vec2(1.0, aspect_ratio), 0.0, 1.0);
+        gl_Position = modelMatrix * vec4(pos_post_rotation.xy * vec2(1.0, aspect_ratio) * vec2(1.0 / ratio, 1.0), 0.0, 1.0);
     }
 '''
 
@@ -114,12 +115,12 @@ fragment_shader_flare = '''
             
             float radial_noise = texture(noise, vec2(dist * 0.01, angle) * noise_rot * 5.0).r;
             float noise_ring = ((radial_noise - 0.5) * 0.2) * gauss(dist, 0.21, 0.01);
-            float anam_flare = gauss(flare_base.x * aspect_ratio, 0.0, 0.01) * gauss(flare_base.y, 0.0, 0.01) + noise_ring;
+            float anam_flare = (gauss(flare_base.x * aspect_ratio, 0.0, 0.01) * gauss(flare_base.y, 0.0, 0.01) + noise_ring) * intensity;
             
             float ray_distort = (1.0 - pow(anam_flare, 1.0) * 1.0);
             float ray_fade = pow(abs(min(pow(gauss(flare_base.x, 0.0, 1.0), 1.0), 1.0)), 0.5);
             
-            float anam_ray = max(1.0 - pow(max(abs(flare_base.y * 3.0) * ray_distort / ray_fade, 0.0), 0.5) * 2.0, 0.0);
+            float anam_ray = max(1.0 - pow(max(abs(flare_base.y * 3.0) * ray_distort / ray_fade, 0.0), 0.5) * 2.0, 0.0) * use_rays;
             
             float anam = max(anam_flare + anam_ray * 1.0, anam_ray) * gauss(flare_base.x, 0.0, 0.5);
             

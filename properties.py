@@ -76,6 +76,15 @@ class GhostProperties(bpy.types.PropertyGroup):
         min=-1.0,
         max=1.0,
     )
+    ratio: FloatProperty(
+        name="Aspect Ratio",
+        description="Aspect Ratio of ghost",
+        default=1.0,
+        min=0.01,
+        max=100000000,
+        soft_min=0.5,
+        soft_max=2.0,
+    )
 
 
 class FlareProperties(bpy.types.PropertyGroup):
