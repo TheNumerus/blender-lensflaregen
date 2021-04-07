@@ -196,6 +196,10 @@ def render_flare(props: MasterProperties, flare_shader, flare_batch):
         if props.flare.rays:
             flare_rays = 1.0 * props.flare.rays_intensity
 
+        anamorphic = 0.0
+        if props.flare.anamorphic:
+            anamorphic = 1.0
+
         ratio = props.resolution.resolution_x / props.resolution.resolution_y
         flare_shader.bind()
 
@@ -210,6 +214,7 @@ def render_flare(props: MasterProperties, flare_shader, flare_batch):
             "rotation": props.camera.rotation,
             "master_intensity": props.master_intensity,
             "res": [props.resolution.resolution_x / 64, props.resolution.resolution_y / 64],
+            "anamorphic": anamorphic,
         }
 
         set_float_uniforms(flare_shader, flare_uniforms)

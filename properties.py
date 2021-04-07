@@ -112,6 +112,12 @@ class FlareProperties(bpy.types.PropertyGroup):
         default=1.0,
         min=0.0,
     )
+    # alternative style
+    anamorphic: BoolProperty(
+        name="Anamorphic Flare",
+        description="Use anamorphic style of flare",
+        default=False,
+    )
 
 
 def get_blades(self):

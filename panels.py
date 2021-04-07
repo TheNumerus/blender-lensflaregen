@@ -81,10 +81,14 @@ class FlareSettingsPanel(bpy.types.Panel):
         col.prop(props, 'size', text='Size')
         col = layout.column(align=True)
         col.prop(props, 'intensity', text='Intensity')
+        layout.separator()
         col = layout.column(align=True)
         col.prop(props, 'rays', text='Rays')
         col = layout.column(align=True)
         col.prop(props, 'rays_intensity', text='Ray Intensity')
+        layout.separator()
+        col = layout.column(align=True)
+        col.prop(props, 'anamorphic', text='Anamorphic Flare')
 
 
 class GhostsUiList(bpy.types.UIList):

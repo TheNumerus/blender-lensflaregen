@@ -64,6 +64,7 @@ fragment_shader_flare = '''
     uniform float use_rays;
     uniform float rotation;
     uniform float master_intensity;
+    uniform float anamorphic;
     uniform vec2 res;
     uniform sampler2D noise;
 
@@ -104,7 +105,28 @@ fragment_shader_flare = '''
         
         float sum = (flare * intensity) + (rays_value * use_rays);
         
-        FragColor = vec4(sum, sum, sum, 1.0) * color * master_intensity + texture(noise, uvInterp * res).r / 255.0;
+        if (anamorphic > 0.5) {
+            float rot = 0.1;
+            
+            mat2 noise_rot;
+            noise_rot[0] = vec2(-cos(rot), sin(rot));
+            noise_rot[1] = vec2(-sin(rot), cos(rot));
+            
+            float radial_noise = texture(noise, vec2(dist * 0.01, angle) * noise_rot * 5.0).r;
+            float noise_ring = ((radial_noise - 0.5) * 0.2) * gauss(dist, 0.21, 0.01);
+            float anam_flare = gauss(flare_base.x * aspect_ratio, 0.0, 0.01) * gauss(flare_base.y, 0.0, 0.01) + noise_ring;
+            
+            float ray_distort = (1.0 - pow(anam_flare, 1.0) * 1.0);
+            float ray_fade = pow(abs(min(pow(gauss(flare_base.x, 0.0, 1.0), 1.0), 1.0)), 0.5);
+            
+            float anam_ray = max(1.0 - pow(max(abs(flare_base.y * 3.0) * ray_distort / ray_fade, 0.0), 0.5) * 2.0, 0.0);
+            
+            float anam = max(anam_flare + anam_ray * 1.0, anam_ray) * gauss(flare_base.x, 0.0, 0.5);
+            
+            FragColor = vec4(anam, anam, anam, 1.0) * color * master_intensity + texture(noise, uvInterp * res).r / 255.0;
+        } else {
+            FragColor = vec4(sum, sum, sum, 1.0) * color * master_intensity + texture(noise, uvInterp * res).r / 255.0;
+        }
     }
 '''
 
