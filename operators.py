@@ -2,7 +2,7 @@ import time
 import os
 
 from .properties import *
-from . import image_processing, ogl
+from . import ogl
 
 
 class AddGhostOperator(bpy.types.Operator):
@@ -120,24 +120,16 @@ class OGLRenderOperator(bpy.types.Operator):
             props.resolution.resolution_x = context.scene.render.resolution_x
             props.resolution.resolution_y = context.scene.render.resolution_y
 
-        # handle debug cross
-        if props.debug_pos:
-            image_processing.draw_debug_cross(props)
-
-            end_time = time.perf_counter()
-            self.report({'INFO'}, f"Lens flare total render time: {end_time - start_time}")
-
-            refresh_compositor()
-
-            return {'FINISHED'}
-
         # load default if none is specified
         if props.spectrum_image is None:
             bpy.ops.lens_flare.load_default_spectrum_image()
 
         props.spectrum_image.gl_load()
 
-        buffer, draw_calls = ogl.render_lens_flare(props)
+        if props.debug_pos:
+            buffer, draw_calls = ogl.render_debug_cross(props)
+        else:
+            buffer, draw_calls = ogl.render_lens_flare(props)
 
         props.image.scale(props.resolution.resolution_x, props.resolution.resolution_y)
         props.image.pixels.foreach_set(buffer)

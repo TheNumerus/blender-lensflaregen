@@ -14,7 +14,50 @@ from .properties import MasterProperties
 noise_buf = None
 
 
-def render_lens_flare(props: MasterProperties):
+def render_debug_cross(props: MasterProperties) -> (bgl.Buffer, int):
+    """
+    Render debug cross
+    :returns buffer with image and draw call count
+    """
+    offscreen = gpu.types.GPUOffScreen(props.resolution.resolution_x, props.resolution.resolution_y)
+    draw_count = 0
+
+    try:
+        shaders = Shaders()
+    except Exception as e:
+        # free offscreen buffers so blender does not throw exception on app quit
+        # only happens anyway when there is bug in shader, but better than doing nothing
+        offscreen.free()
+        raise e
+
+    quad_batch = batch_quad(shaders.debug)
+
+    with offscreen.bind():
+        # black background
+        bgl.glClearColor(0.0, 0.0, 0.0, 1.0)
+        bgl.glClear(bgl.GL_COLOR_BUFFER_BIT)
+
+        shaders.debug.bind()
+
+        uniforms = {
+            "flare_position": Vector((props.position_x, props.position_y)),
+            "aspect_ratio": props.resolution.resolution_x / props.resolution.resolution_y,
+        }
+
+        set_float_uniforms(shaders.debug, uniforms)
+
+        quad_batch.draw(shaders.debug)
+        draw_count += 1
+
+        # copy rendered image to RAM
+        buffer = bgl.Buffer(bgl.GL_FLOAT, props.resolution.resolution_x * props.resolution.resolution_y * 4)
+        bgl.glReadBuffer(bgl.GL_BACK)
+        bgl.glReadPixels(0, 0, props.resolution.resolution_x, props.resolution.resolution_y, bgl.GL_RGBA, bgl.GL_FLOAT, buffer)
+
+    return buffer, draw_count
+
+
+def render_lens_flare(props: MasterProperties) -> (bgl.Buffer, int):
     """
     Renders lens flare effect to buffer
     :returns buffer with effect
