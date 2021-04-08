@@ -34,14 +34,11 @@ float radial_noise(float dist, float angle) {
 }
 
 void main() {
-    vec2 flare_base = uvInterp - flare_position;
-    float dist = sqrt( pow(flare_base.x * aspect_ratio, 2.0) + pow(flare_base.y, 2.0) ); // [0.0; 1.0]
+    vec2 flare_base = (uvInterp - flare_position) * vec2(aspect_ratio, 1.0);
 
-    // angle component of polar coordinates
-    float angle = acos(flare_base.x * aspect_ratio / dist);
-    if (flare_base.y < 0.0) {
-        angle = -acos(flare_base.x * aspect_ratio / dist);
-    }
+    vec2 polar = euler_to_polar(flare_base);
+    float dist = polar.x;
+    float angle = polar.y;
 
     // normalize
     angle += PI / 2.0;
@@ -53,30 +50,31 @@ void main() {
 
     float blade_count_to_ray_intensity = min(max((-blades + 18.0) / 12.0, 0.0), 1.0);
 
-    float noise_ring_intensity = gauss(dist * noise_ring_extrusion, 0.21, 0.01);
+    float noise_ring_intensity = gauss(dist * noise_ring_extrusion / (size / 10.0), 0.21, 0.01);
     float noise_ring = rad_noise * noise_ring_intensity;
 
-    float flare = gauss(dist, 0.0, size / 100.0);
-
-    float rays_value = mix(noise_ring, rays(dist, angle) * rad_noise, blade_count_to_ray_intensity);
-
-    float ray_center = 2.0 * gauss(dist, 0.0, 0.02);
-
-    float sum = (flare * intensity) + ((rays_value + ray_center) * ray_intensity);
-
     if (anamorphic > 0.5) {
-        float anam_ring = (noise_ring - 0.5) * 0.2;
-        float anam_flare = (gauss(flare_base.x * aspect_ratio, 0.0, 0.01) * gauss(flare_base.y, 0.0, 0.01) + anam_ring) * intensity;
+        float anam_ring = (noise_ring) * 0.2;
+        float anam_flare = (gauss(dist, 0.0, size / 200.0) + anam_ring) + gauss(dist, 0.0, size / 2000.0) * intensity;
 
-        float ray_distort = (1.0 - pow(anam_flare, 1.0) * 1.0);
-        float ray_fade = pow(abs(min(pow(gauss(flare_base.x, 0.0, 1.0), 1.0), 1.0)), 0.5);
+        float ray_distort = (1.0 - pow(anam_flare, 1.0) * 0.2);
+        float ray_fade = max(1.0 - abs(0.4 * flare_base.x), 0.0);
 
-        float anam_ray = max(1.0 - pow(max(abs(flare_base.y * 3.0) * ray_distort / ray_fade, 0.0), 0.5) * 2.0, 0.0) * ray_intensity;
+        float anam_ray_base = flare_base.y * ray_distort / ray_fade;
+        float anam_ray = min(1.0, max(0.0, 1.0 - 80.0 * (abs(anam_ray_base) - 0.01))) * ray_intensity;
 
         float anam = max(anam_flare + anam_ray * 1.0, anam_ray) * gauss(flare_base.x, 0.0, 0.5);
 
         FragColor = vec4(anam, anam, anam, 1.0) * color * master_intensity + texture(noise, uvInterp * res).r / 255.0;
     } else {
+        float flare = gauss(dist, 0.0, size / 100.0);
+
+        float rays_value = mix(noise_ring, rays(dist, angle) * rad_noise, blade_count_to_ray_intensity);
+
+        float ray_center = 2.0 * gauss(dist, 0.0, 0.02);
+
+        float sum = (flare * intensity) + ((rays_value + ray_center) * ray_intensity);
+
         FragColor = vec4(sum, sum, sum, 1.0) * color * master_intensity + texture(noise, uvInterp * res).r / 255.0;
     }
 }
