@@ -8,7 +8,7 @@ import bpy
 from gpu_extras.batch import batch_for_shader
 from mathutils import Matrix, Vector
 
-from . import shaders
+from .shaders import Shaders
 from .properties import MasterProperties
 
 noise_buf = None
@@ -37,13 +37,10 @@ def render_lens_flare(props: MasterProperties):
     offscreen = gpu.types.GPUOffScreen(max_x, max_y)
     ghost_fb = gpu.types.GPUOffScreen(max_x, max_y)
 
-    ghost_shader = gpu.types.GPUShader(shaders.vertex_shader_ghost, shaders.fragment_shader_ghost)
-    ghost_batch = batch_from_blades(blades, ghost_shader)
+    shaders = Shaders()
 
-    flare_shader = gpu.types.GPUShader(shaders.vertex_shader_quad, shaders.fragment_shader_flare)
-    flare_batch = batch_quad(flare_shader)
-
-    copy_shader = gpu.types.GPUShader(shaders.vertex_shader_quad, shaders.fragment_shader_copy_ca)
+    ghost_batch = batch_from_blades(blades, shaders.ghost)
+    quad_batch = batch_quad(shaders.flare)
 
     draw_count = 0
 
@@ -86,7 +83,7 @@ def render_lens_flare(props: MasterProperties):
                 gpu.matrix.load_matrix(Matrix.Identity(4))
                 gpu.matrix.load_projection_matrix(Matrix.Identity(4))
 
-                ghost_shader.bind()
+                shaders.ghost.bind()
 
                 # transform matrix
                 model_matrix = Matrix.Translation((ghost_x, ghost_y, 0.0)) @ Matrix.Scale(ghost.size / 100, 4)
@@ -110,9 +107,9 @@ def render_lens_flare(props: MasterProperties):
                     "ratio": ghost.ratio,
                 }
 
-                set_float_uniforms(ghost_shader, ghost_uniforms)
+                set_float_uniforms(shaders.ghost, ghost_uniforms)
 
-                ghost_batch.draw(ghost_shader)
+                ghost_batch.draw(shaders.ghost)
                 draw_count += 1
 
         with offscreen.bind():
@@ -135,7 +132,7 @@ def render_lens_flare(props: MasterProperties):
             bgl.glBindTexture(bgl.GL_TEXTURE_2D, noise_tex.to_list()[0])
 
             with gpu.matrix.push_pop():
-                copy_shader.bind()
+                shaders.copy.bind()
                 # reset matrices
                 gpu.matrix.load_matrix(Matrix.Identity(4))
                 gpu.matrix.load_projection_matrix(Matrix.Identity(4))
@@ -147,7 +144,7 @@ def render_lens_flare(props: MasterProperties):
                     "samples": props.dispersion_samples,
                 }
 
-                set_int_uniforms(copy_shader, copy_int_uniforms)
+                set_int_uniforms(shaders.copy, copy_int_uniforms)
 
                 copy_float_uniforms = {
                     "dispersion": ghost.dispersion,
@@ -158,9 +155,9 @@ def render_lens_flare(props: MasterProperties):
                     "use_jitter": 1.0,
                 }
 
-                set_float_uniforms(copy_shader, copy_float_uniforms)
+                set_float_uniforms(shaders.copy, copy_float_uniforms)
 
-                flare_batch.draw(copy_shader)
+                quad_batch.draw(shaders.copy)
                 draw_count += 1
 
     # finally render flare on top
@@ -168,7 +165,7 @@ def render_lens_flare(props: MasterProperties):
         bgl.glActiveTexture(bgl.GL_TEXTURE0)
         bgl.glBindTexture(bgl.GL_TEXTURE_2D, noise_tex.to_list()[0])
 
-        render_flare(props, flare_shader, flare_batch)
+        render_flare(props, shaders.flare, quad_batch)
         draw_count += 1
 
         # copy rendered image to RAM
@@ -204,6 +201,10 @@ def render_flare(props: MasterProperties, flare_shader, flare_batch):
         if props.flare.anamorphic:
             anamorphic = 1.0
 
+        blades = props.camera.blades
+        if blades == 0:
+            blades = 64
+
         ratio = props.resolution.resolution_x / props.resolution.resolution_y
         flare_shader.bind()
 
@@ -213,7 +214,7 @@ def render_flare(props: MasterProperties, flare_shader, flare_batch):
             "intensity": props.flare.intensity,
             "flare_position": flare_position,
             "aspect_ratio": ratio,
-            "blades": float(props.camera.blades),
+            "blades": blades,
             "use_rays": flare_rays,
             "rotation": props.camera.rotation,
             "master_intensity": props.master_intensity,
