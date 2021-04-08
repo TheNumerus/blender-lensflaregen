@@ -4,7 +4,7 @@ uniform float intensity;
 uniform vec2 flare_position;
 uniform float aspect_ratio;
 uniform float blades;
-uniform float use_rays;
+uniform float ray_intensity;
 uniform float rotation;
 uniform float master_intensity;
 uniform float anamorphic;
@@ -62,7 +62,7 @@ void main() {
 
     float ray_center = 2.0 * gauss(dist, 0.0, 0.02);
 
-    float sum = (flare * intensity) + ((rays_value + ray_center) * use_rays);
+    float sum = (flare * intensity) + ((rays_value + ray_center) * ray_intensity);
 
     if (anamorphic > 0.5) {
         float anam_ring = (noise_ring - 0.5) * 0.2;
@@ -71,7 +71,7 @@ void main() {
         float ray_distort = (1.0 - pow(anam_flare, 1.0) * 1.0);
         float ray_fade = pow(abs(min(pow(gauss(flare_base.x, 0.0, 1.0), 1.0), 1.0)), 0.5);
 
-        float anam_ray = max(1.0 - pow(max(abs(flare_base.y * 3.0) * ray_distort / ray_fade, 0.0), 0.5) * 2.0, 0.0) * use_rays;
+        float anam_ray = max(1.0 - pow(max(abs(flare_base.y * 3.0) * ray_distort / ray_fade, 0.0), 0.5) * 2.0, 0.0) * ray_intensity;
 
         float anam = max(anam_flare + anam_ray * 1.0, anam_ray) * gauss(flare_base.x, 0.0, 0.5);
 

@@ -109,12 +109,6 @@ class FlareProperties(bpy.types.PropertyGroup):
         default=1.0,
         min=0.0,
     )
-    # these two control rays
-    rays: BoolProperty(
-        name="Flare Rays",
-        description="Render rays coming from light source",
-        default=False,
-    )
     rays_intensity: FloatProperty(
         name="Rays Intensity",
         description="Intensity of ray effect",
