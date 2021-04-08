@@ -4,8 +4,7 @@ bl_info = {
     "blender": (2, 92, 0),
     "category": "Node",
     "author": "Petr Volf",
-    "version": (0, 2, 0),
-    "warning": "Work in Progress version",
+    "version": (0, 3, 0),
 }
 
 
