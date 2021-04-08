@@ -18,6 +18,8 @@ class Shaders:
         flare_fs = Shaders.__read_shader('./shaders/flare.frag')
         copy_fs = Shaders.__read_shader('./shaders/dispersion_copy.frag')
 
-        self.ghost = gpu.types.GPUShader(ghost_vs, ghost_fs)
-        self.flare = gpu.types.GPUShader(quad_vs, flare_fs)
-        self.copy = gpu.types.GPUShader(quad_vs, copy_fs)
+        common = Shaders.__read_shader('./shaders/common.shader')
+
+        self.ghost = gpu.types.GPUShader(ghost_vs, ghost_fs, libcode=common)
+        self.flare = gpu.types.GPUShader(quad_vs, flare_fs, libcode=common)
+        self.copy = gpu.types.GPUShader(quad_vs, copy_fs, libcode=common)

@@ -1,6 +1,3 @@
-#define E 2.71828
-#define PI 3.14159
-
 uniform vec4 color;
 uniform float size;
 uniform float intensity;
@@ -17,10 +14,6 @@ uniform sampler2D noise;
 in vec2 uvInterp;
 
 out vec4 FragColor;
-
-float gauss(float x, float center, float std_dev) {
-    return pow(E, -(pow(x - center, 2.0) / std_dev));
-}
 
 float rays(float distance, float norm_angle) {
     float angle = norm_angle * 2.0 * PI * blades + PI;
