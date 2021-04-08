@@ -37,7 +37,14 @@ def render_lens_flare(props: MasterProperties):
     offscreen = gpu.types.GPUOffScreen(max_x, max_y)
     ghost_fb = gpu.types.GPUOffScreen(max_x, max_y)
 
-    shaders = Shaders()
+    try:
+        shaders = Shaders()
+    except Exception as e:
+        # free offscreen buffers so blender does not throw exception on app quit
+        # only happens anyway when there is bug in shader, but better than doing nothing
+        offscreen.free()
+        ghost_fb.free()
+        raise e
 
     ghost_batch = batch_from_blades(blades, shaders.ghost)
     quad_batch = batch_quad(shaders.flare)
