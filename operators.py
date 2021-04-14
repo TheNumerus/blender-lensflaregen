@@ -127,8 +127,8 @@ class OGLRenderOperator(bpy.types.Operator):
 
         # set values from scene
         if not props.resolution.override_scene_resolution:
-            props.resolution.resolution_x = context.scene.render.resolution_x
-            props.resolution.resolution_y = context.scene.render.resolution_y
+            props.resolution.resolution_x = context.scene.render.resolution_x * context.scene.render.resolution_percentage / 100
+            props.resolution.resolution_y = context.scene.render.resolution_y * context.scene.render.resolution_percentage / 100
 
         # load default if none is specified
         if props.spectrum_image is None:
