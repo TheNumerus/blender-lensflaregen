@@ -70,7 +70,7 @@ def render_lens_flare(props: MasterProperties) -> (bgl.Buffer, int):
     # render kinda circles
     blades = props.camera.blades
     if blades == 0:
-        blades = 64
+        blades = 256
 
     (flare_vector_x, flare_vector_y) = (props.position_x - 0.5, props.position_y - 0.5);
     flare_vector_len = math.sqrt(pow(flare_vector_x, 2) + pow(flare_vector_y, 2) + 0.0001)
@@ -132,10 +132,6 @@ def render_lens_flare(props: MasterProperties) -> (bgl.Buffer, int):
 
             # transform matrix
             model_matrix = Matrix.Translation((ghost_x, ghost_y, 0.0)) @ Matrix.Scale(ghost.size / 100, 4)
-            # transparency
-            center_transparency = 0.0
-            if ghost.transparent_center:
-                center_transparency = 1.0
 
             ghost_uniforms = {
                 # move and scale ghosts
@@ -145,7 +141,7 @@ def render_lens_flare(props: MasterProperties) -> (bgl.Buffer, int):
                 # set color and intensity
                 "color": Vector((ghost.color[0], ghost.color[1], ghost.color[2], 1)),
                 # set centers
-                "empty": center_transparency,
+                "empty": ghost.center_transparency,
                 # aspect ratio of destination image
                 "aspect_ratio": ratio,
                 # anamorphic lens simulation

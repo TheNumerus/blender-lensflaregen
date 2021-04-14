@@ -59,10 +59,12 @@ class GhostProperties(bpy.types.PropertyGroup):
         description="Ghost Name",
         default="New Ghost",
     )
-    transparent_center: BoolProperty(
-        name="Transparent Center",
+    center_transparency: FloatProperty(
+        name="Center Transparency",
         description="Renders ghost with more transparent center",
-        default=True,
+        default=0.0,
+        min=0.0,
+        max=18.0,
     )
     intensity: FloatProperty(
         name="Ghost Intensity",

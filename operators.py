@@ -83,7 +83,8 @@ class DuplicateGhostOperator(bpy.types.Operator):
         new_ghost.offset = props.ghosts[self.duplicate_id].offset
         new_ghost.perpendicular_offset = props.ghosts[self.duplicate_id].perpendicular_offset
         new_ghost.size = props.ghosts[self.duplicate_id].size
-        new_ghost.transparent_center = props.ghosts[self.duplicate_id].transparent_center
+        new_ghost.center_transparency = props.ghosts[self.duplicate_id].center_transparency
+        new_ghost.dispersion_center = props.ghosts[self.duplicate_id].dispersion_center
         new_ghost.dispersion = props.ghosts[self.duplicate_id].dispersion
         new_ghost.ratio = props.ghosts[self.duplicate_id].ratio
 
