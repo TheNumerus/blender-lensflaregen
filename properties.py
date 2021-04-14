@@ -269,3 +269,8 @@ class MasterProperties(bpy.types.PropertyGroup):
         description="Render only cross with position",
         default=False,
     )
+    use_jitter: BoolProperty(
+        name="Use Jitter",
+        description="Use jittered ghost rendering (smoother, but noisier)",
+        default=True,
+    )

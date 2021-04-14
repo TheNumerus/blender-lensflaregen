@@ -194,7 +194,7 @@ def render_lens_flare(props: MasterProperties) -> (bgl.Buffer, int):
                 "master_intensity": props.master_intensity,
                 "intensity": ghost.intensity,
                 "res": [props.resolution.resolution_x / 64, props.resolution.resolution_y / 64],
-                "use_jitter": 1.0,
+                "use_jitter": float(props.use_jitter),
                 "disperse_from_ghost_center": disperse_center,
                 "ghost_pos": [ghost_x, ghost_y]
             }

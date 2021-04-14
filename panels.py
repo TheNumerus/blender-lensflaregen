@@ -207,6 +207,9 @@ class MiscPanel(bpy.types.Panel):
         col = layout.column(align=True)
         col.prop(props, 'dispersion_samples', text='Dispersion Samples')
 
+        col = layout.column(align=True)
+        col.prop(props, 'use_jitter', text='Use Jitter')
+
         row = layout.row()
         row.prop(props, 'spectrum_image', text='Spectrum Image')
         row.operator('lens_flare.load_default_spectrum_image', text='', icon='FILE_IMAGE')
