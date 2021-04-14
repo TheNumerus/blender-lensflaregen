@@ -8,6 +8,8 @@ uniform float master_intensity;
 uniform float intensity;
 uniform vec2 res;
 uniform float use_jitter;
+uniform float disperse_from_ghost_center;
+uniform vec2 ghost_pos;
 
 in vec2 uvInterp;
 
@@ -15,7 +17,13 @@ out vec4 FragColor;
 
 vec2 uv_scaled(vec2 uv, float scale) {
     vec2 centered = uv - 0.5;
+    if (disperse_from_ghost_center > 0.5) {
+        centered = uv - ghost_pos / 2.0 - 0.5;
+    }
     vec2 scaled = centered * scale;
+    if (disperse_from_ghost_center > 0.5) {
+        return scaled + ghost_pos / 2.0 + 0.5;
+    }
     return scaled + 0.5;
 }
 

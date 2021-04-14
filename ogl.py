@@ -187,6 +187,11 @@ def render_lens_flare(props: MasterProperties) -> (bgl.Buffer, int):
 
             set_int_uniforms(shaders.copy, copy_int_uniforms)
 
+            if ghost.dispersion_center == 'image':
+                disperse_center = 0.0
+            else:
+                disperse_center = 1.0
+
             copy_float_uniforms = {
                 "dispersion": ghost.dispersion,
                 "spectrum_total": spectrum_total,
@@ -194,6 +199,8 @@ def render_lens_flare(props: MasterProperties) -> (bgl.Buffer, int):
                 "intensity": ghost.intensity,
                 "res": [props.resolution.resolution_x / 64, props.resolution.resolution_y / 64],
                 "use_jitter": 1.0,
+                "disperse_from_ghost_center": disperse_center,
+                "ghost_pos": [ghost_x, ghost_y]
             }
 
             set_float_uniforms(shaders.copy, copy_float_uniforms)

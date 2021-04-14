@@ -6,7 +6,8 @@ from bpy.props import \
     BoolProperty,\
     PointerProperty,\
     IntProperty,\
-    CollectionProperty
+    CollectionProperty,\
+    EnumProperty
 from .panels import regenerate_ghost_icons
 
 
@@ -75,6 +76,13 @@ class GhostProperties(bpy.types.PropertyGroup):
         default=0.0,
         min=-1.0,
         max=1.0,
+    )
+    dispersion_center: EnumProperty(
+        items=[("image", "Image", "Ghost will be dispersed from image center"),
+            ("ghost", "Ghost", "Ghost will be dispersed from its center")],
+        name="Dispersion Center",
+        description="Sets center of dispersion effect",
+        default="image",
     )
     ratio: FloatProperty(
         name="Aspect Ratio",
