@@ -1,5 +1,16 @@
 # Blender Lens Flare Generator
-Blender addon for rendering lens-flare effects
+Blender addon for rendering lens-flare effects.  
+Uses OpenGL from Blender API.  
+Supports versions 2.91 and newer. 
+
+## Features
+- Customizable flare and ghost rendering
+- Dispersion simulation for ghosts
+- Anamorphic flare option
+- Very basic animation support
+
+# UI screenshot
+![UI example][ui_overview]
 
 ## Example renders
 ![Example render][example]
@@ -9,3 +20,4 @@ Blender addon for rendering lens-flare effects
 [example]: ca_render.webp
 [example_anam]: anam_flare.webp
 [example_ring]: rings.webp
+[ui_overview]: ui_overview.png
