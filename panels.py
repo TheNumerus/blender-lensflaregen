@@ -31,6 +31,10 @@ class MainSettingsPanel(bpy.types.Panel):
         col = layout.column(align=True)
         col.prop(props, "position_x", text="Effect Position X")
         col.prop(props, "position_y", text="Y")
+        col.enabled = props.position_object is None
+
+        col = layout.column(align=True)
+        col.prop(props, 'position_object', text="Position Object")
 
         col = layout.column(align=True)
         col.prop(props, "master_intensity", text="Master Intensity")

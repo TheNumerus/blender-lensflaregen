@@ -1,3 +1,5 @@
+import bpy_extras
+
 import time
 import os
 
@@ -108,6 +110,13 @@ class OGLRenderOperator(bpy.types.Operator):
         props: MasterProperties = context.scene.lens_flare_props
 
         start_time = time.perf_counter()
+
+        # set position from object
+        if props.position_object is not None:
+            camera = context.scene.camera
+            pos = bpy_extras.object_utils.world_to_camera_view(context.scene, context.scene.camera, props.position_object.location)
+            props.position_x = pos[0]
+            props.position_y = pos[1]
 
         # set values from camera
         if not props.camera.use_override:

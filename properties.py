@@ -218,6 +218,11 @@ class MasterProperties(bpy.types.PropertyGroup):
         soft_min=0.0,
         soft_max=1.0,
     )
+    position_object: PointerProperty(
+        name="Position Object",
+        description="Use this object as position",
+        type=bpy.types.Object
+    )
     image: PointerProperty(
         name="Image",
         description="Image to render to",
