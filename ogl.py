@@ -167,7 +167,7 @@ def render_lens_flare(props: MasterProperties) -> (bgl.Buffer, int):
             bgl.glTexParameterfv(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_BORDER_COLOR, border_color)
 
             bgl.glActiveTexture(bgl.GL_TEXTURE2)
-            bgl.glBindTexture(bgl.GL_TEXTURE_2D, bpy.data.images['spectral.png'].bindcode)
+            bgl.glBindTexture(bgl.GL_TEXTURE_2D, props.spectrum_image.bindcode)
 
             bgl.glActiveTexture(bgl.GL_TEXTURE1)
             bgl.glBindTexture(bgl.GL_TEXTURE_2D, noise_tex.to_list()[0])
