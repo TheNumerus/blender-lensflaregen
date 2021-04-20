@@ -236,10 +236,11 @@ def render_lens_flare(context, props: MasterProperties) -> (bgl.Buffer, int):
             render_flare(props, (pos_x, pos_y), shaders.flare, quad_batch)
             draw_count += 1
 
-            # copy rendered image to RAM
-            buffer = bgl.Buffer(bgl.GL_FLOAT, max_x * max_y * 4)
-            bgl.glReadBuffer(bgl.GL_BACK)
-            bgl.glReadPixels(0, 0, max_x, max_y, bgl.GL_RGBA, bgl.GL_FLOAT, buffer)
+    with offscreen.bind():
+        # copy rendered image to RAM
+        buffer = bgl.Buffer(bgl.GL_FLOAT, max_x * max_y * 4)
+        bgl.glReadBuffer(bgl.GL_BACK)
+        bgl.glReadPixels(0, 0, max_x, max_y, bgl.GL_RGBA, bgl.GL_FLOAT, buffer)
 
     bgl.glDeleteTextures(1, noise_tex)
 
