@@ -210,7 +210,7 @@ def render_flare(props: MasterProperties, position, flare_shader, flare_batch):
     flare_batch.draw(flare_shader)
 
 
-def render_ghost(props: MasterProperties, ghost, ghost_shader, ghost_batch, flare_vector, flare_postition):
+def render_ghost(props: MasterProperties, ghost, ghost_shader, ghost_batch, flare_vector, flare_position):
     """
     Renders ghost to active buffer
     """
@@ -221,8 +221,8 @@ def render_ghost(props: MasterProperties, ghost, ghost_shader, ghost_batch, flar
     bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE)
 
     # calculate position
-    ghost_x = ((flare_postition.x - 0.5) * 2.0) * ghost.offset
-    ghost_y = ((flare_postition.y - 0.5) * 2.0) * ghost.offset
+    ghost_x = ((flare_position.x - 0.5) * 2.0) * ghost.offset
+    ghost_y = ((flare_position.y - 0.5) * 2.0) * ghost.offset
     # add perpendicular offset
     ghost_x += flare_vector.y * ghost.perpendicular_offset
     ghost_y += -flare_vector.x * ghost.perpendicular_offset
