@@ -20,16 +20,10 @@ def render_debug_cross(context, props: MasterProperties) -> (bgl.Buffer, int):
     Render debug cross
     :returns buffer with image and draw call count
     """
+    shaders = Shaders()
+
     offscreen = gpu.types.GPUOffScreen(props.resolution.resolution_x, props.resolution.resolution_y)
     draw_count = 0
-
-    try:
-        shaders = Shaders()
-    except Exception as e:
-        # free offscreen buffers so blender does not throw exception on app quit
-        # only happens anyway when there is bug in shader, but better than doing nothing
-        offscreen.free()
-        raise e
 
     quad_batch = batch_quad(shaders.debug)
 
@@ -81,17 +75,10 @@ def render_lens_flare(context, props: MasterProperties) -> (bgl.Buffer, int):
     if blades == 0:
         blades = 256
 
+    shaders = Shaders()
+
     offscreen = gpu.types.GPUOffScreen(max_x, max_y)
     ghost_fb = gpu.types.GPUOffScreen(max_x, max_y)
-
-    try:
-        shaders = Shaders()
-    except Exception as e:
-        # free offscreen buffers so blender does not throw exception on app quit
-        # only happens anyway when there is bug in shader, but better than doing nothing
-        offscreen.free()
-        ghost_fb.free()
-        raise e
 
     ghost_batch = batch_from_blades(blades, shaders.ghost)
     quad_batch = batch_quad(shaders.flare)
