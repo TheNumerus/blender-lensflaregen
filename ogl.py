@@ -12,8 +12,6 @@ from mathutils import Matrix, Vector
 from .shaders import Shaders
 from .properties import MasterProperties
 
-noise_buf = None
-
 
 def render_debug_cross(context, props: MasterProperties) -> (bgl.Buffer, int):
     """
@@ -87,13 +85,7 @@ def render_lens_flare(context, props: MasterProperties) -> (bgl.Buffer, int):
 
     spectrum_total = integrate_spectrum(props.spectrum_image)
 
-    noise_buf = generate_noise_buffer()
-    noise_tex = bgl.Buffer(bgl.GL_INT, 1)
-    bgl.glGenTextures(1, noise_tex)
-    bgl.glBindTexture(bgl.GL_TEXTURE_2D, noise_tex.to_list()[0])
-    bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA32F, 64, 64, 0, bgl.GL_RGBA, bgl.GL_FLOAT, noise_buf)
-    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_LINEAR)
-    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER, bgl.GL_LINEAR)
+    noise_tex = NoiseTexture()
 
     # clear framebuffer
     with offscreen.bind():
@@ -144,7 +136,7 @@ def render_lens_flare(context, props: MasterProperties) -> (bgl.Buffer, int):
                 bgl.glBindTexture(bgl.GL_TEXTURE_2D, props.spectrum_image.bindcode)
 
                 bgl.glActiveTexture(bgl.GL_TEXTURE1)
-                bgl.glBindTexture(bgl.GL_TEXTURE_2D, noise_tex.to_list()[0])
+                bgl.glBindTexture(bgl.GL_TEXTURE_2D, noise_tex.gl_code)
 
                 copy_ghost(shaders.copy, quad_batch, ghost, props, Vector((ghost_x, ghost_y)), spectrum_total)
                 draw_count += 1
@@ -152,7 +144,7 @@ def render_lens_flare(context, props: MasterProperties) -> (bgl.Buffer, int):
         # finally render flare on top
         with offscreen.bind():
             bgl.glActiveTexture(bgl.GL_TEXTURE0)
-            bgl.glBindTexture(bgl.GL_TEXTURE_2D, noise_tex.to_list()[0])
+            bgl.glBindTexture(bgl.GL_TEXTURE_2D, noise_tex.gl_code)
 
             render_flare(props, pos.xy, shaders.flare, quad_batch)
             draw_count += 1
@@ -163,10 +155,9 @@ def render_lens_flare(context, props: MasterProperties) -> (bgl.Buffer, int):
         bgl.glReadBuffer(bgl.GL_BACK)
         bgl.glReadPixels(0, 0, max_x, max_y, bgl.GL_RGBA, bgl.GL_FLOAT, buffer)
 
-    bgl.glDeleteTextures(1, noise_tex)
-
     offscreen.free()
     ghost_fb.free()
+    noise_tex.free()
 
     return buffer, draw_count
 
@@ -346,17 +337,32 @@ def integrate_spectrum(image: bpy.types.Image) -> Vector:
     return i
 
 
-def generate_noise_buffer() -> bgl.Buffer:
-    global noise_buf
+class NoiseTexture:
+    __noise_buf = None
 
-    if noise_buf is not None:
-        return noise_buf
-    values = []
+    @classmethod
+    def __generate(cls):
+        if cls.__noise_buf is not None:
+            return
+        values = []
 
-    for pixel in range(0, 64 * 64):
-        val = random.random()
-        values.extend([val, val, val, 1.0])
+        for pixel in range(0, 64 * 64):
+            val = random.random()
+            values.extend([val, val, val, 1.0])
 
-    noise_buf = bgl.Buffer(bgl.GL_FLOAT, 64 * 64 * 4, values)
+        cls.__noise_buf = bgl.Buffer(bgl.GL_FLOAT, 64 * 64 * 4, values)
 
-    return noise_buf
+    def __init__(self):
+        self.__generate()
+
+        self.__buffer = bgl.Buffer(bgl.GL_INT, 1)
+        self.gl_code = self.__buffer.to_list()[0]
+
+        bgl.glGenTextures(1, self.__buffer)
+        bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.gl_code)
+        bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA32F, 64, 64, 0, bgl.GL_RGBA, bgl.GL_FLOAT, self.__noise_buf)
+        bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_LINEAR)
+        bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER, bgl.GL_LINEAR)
+
+    def free(self):
+        bgl.glDeleteTextures(1, self.__buffer)
