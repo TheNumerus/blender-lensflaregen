@@ -114,7 +114,7 @@ class OGLRenderOperator(bpy.types.Operator):
         # set position from object
         if props.position_object is not None:
             camera = context.scene.camera
-            pos = bpy_extras.object_utils.world_to_camera_view(context.scene, context.scene.camera, props.position_object.location)
+            pos = bpy_extras.object_utils.world_to_camera_view(context.scene, context.scene.camera, props.position_object.matrix_world.to_translation())
             props.position_x = pos[0]
             props.position_y = pos[1]
 
