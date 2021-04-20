@@ -1,3 +1,5 @@
+import bpy.types
+
 from .properties import *
 
 previews = {}
@@ -29,15 +31,61 @@ class MainSettingsPanel(bpy.types.Panel):
         row.template_ID(props, 'image', new="image.new", text='Output Image')
 
         col = layout.column(align=True)
-        col.prop(props, "position_x", text="Effect Position X")
-        col.prop(props, "position_y", text="Y")
-        col.enabled = props.position_object is None
-
-        col = layout.column(align=True)
-        col.prop(props, 'position_object', text="Position Object")
-
-        col = layout.column(align=True)
         col.prop(props, "master_intensity", text="Master Intensity")
+
+
+class PositionsUiList(bpy.types.UIList):
+    bl_idname = "LF_UL_Positions"
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_property, index=0, flt_flag=0):
+        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+            layout.label(text=item.name)
+        else:
+            layout.alignment = 'CENTER'
+            layout.label(text="")
+
+
+class PositionPanel(bpy.types.Panel):
+    bl_label = "Positions"
+    bl_idname = "LF_PT_PositionSettings"
+    bl_space_type = 'NODE_EDITOR'
+    bl_region_type = 'UI'
+    bl_category = 'Lens Flares'
+    bl_parent_id = "LF_PT_MainSettings"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_decorate = False
+
+        props: MasterProperties = context.scene.lens_flare_props
+
+        row = layout.row()
+        row.template_list("LF_UL_Positions", "", props, "positions", props, "active_object", rows=3)
+
+        # position adding and removal
+        col = row.column(align=True)
+        col.operator("lens_flare.add_position", icon='ADD', text="")
+        remove_op = col.operator('lens_flare.remove_position', text='', icon='REMOVE')
+        remove_op.remove_id = props.active_object
+
+        layout.use_property_split = True
+        layout.separator()
+
+        if props.active_object in range(0, len(props.positions)):
+            position = props.positions[props.active_object]
+
+            col = layout.column(align=True)
+            col.prop(position, 'name', text='Name')
+
+            layout.prop(position, 'variant', text='Variant', expand=True)
+
+            if position.variant == 'auto':
+                col = layout.column(align=True)
+                col.prop(position, 'auto_object', text="Position Object")
+            elif position.variant == 'manual':
+                col = layout.column(align=True)
+                col.prop(position, "manual_x", text="Effect Position X")
+                col.prop(position, "manual_y", text="Y")
 
 
 class ResolutionPanel(bpy.types.Panel):

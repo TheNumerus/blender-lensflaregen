@@ -5,6 +5,7 @@ from typing import Any, Dict
 import gpu
 import bgl
 import bpy
+import bpy_extras
 from gpu_extras.batch import batch_for_shader
 from mathutils import Matrix, Vector
 
@@ -14,7 +15,7 @@ from .properties import MasterProperties
 noise_buf = None
 
 
-def render_debug_cross(props: MasterProperties) -> (bgl.Buffer, int):
+def render_debug_cross(context, props: MasterProperties) -> (bgl.Buffer, int):
     """
     Render debug cross
     :returns buffer with image and draw call count
@@ -36,18 +37,31 @@ def render_debug_cross(props: MasterProperties) -> (bgl.Buffer, int):
         # black background
         bgl.glClearColor(0.0, 0.0, 0.0, 1.0)
         bgl.glClear(bgl.GL_COLOR_BUFFER_BIT)
+        bgl.glEnable(bgl.GL_BLEND)
+        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE)
 
         shaders.debug.bind()
 
-        uniforms = {
-            "flare_position": Vector((props.position_x, props.position_y)),
-            "aspect_ratio": props.resolution.resolution_x / props.resolution.resolution_y,
-        }
+        for position in props.positions:
+            pos_x = position.manual_x
+            pos_y = position.manual_y
 
-        set_float_uniforms(shaders.debug, uniforms)
+            # set position from object
+            if position.variant == 'auto':
+                pos = bpy_extras.object_utils.world_to_camera_view(context.scene, context.scene.camera,
+                                                                   position.auto_object.matrix_world.to_translation())
+                pos_x = pos[0]
+                pos_y = pos[1]
 
-        quad_batch.draw(shaders.debug)
-        draw_count += 1
+            uniforms = {
+                "flare_position": Vector((pos_x, pos_y)),
+                "aspect_ratio": props.resolution.resolution_x / props.resolution.resolution_y,
+            }
+
+            set_float_uniforms(shaders.debug, uniforms)
+
+            quad_batch.draw(shaders.debug)
+            draw_count += 1
 
         # copy rendered image to RAM
         buffer = bgl.Buffer(bgl.GL_FLOAT, props.resolution.resolution_x * props.resolution.resolution_y * 4)
@@ -57,7 +71,7 @@ def render_debug_cross(props: MasterProperties) -> (bgl.Buffer, int):
     return buffer, draw_count
 
 
-def render_lens_flare(props: MasterProperties) -> (bgl.Buffer, int):
+def render_lens_flare(context, props: MasterProperties) -> (bgl.Buffer, int):
     """
     Renders lens flare effect to buffer
     :returns buffer with effect
@@ -71,11 +85,6 @@ def render_lens_flare(props: MasterProperties) -> (bgl.Buffer, int):
     blades = props.camera.blades
     if blades == 0:
         blades = 256
-
-    (flare_vector_x, flare_vector_y) = (props.position_x - 0.5, props.position_y - 0.5);
-    flare_vector_len = math.sqrt(pow(flare_vector_x, 2) + pow(flare_vector_y, 2) + 0.0001)
-    flare_vector_x /= flare_vector_len
-    flare_vector_y /= flare_vector_len
 
     offscreen = gpu.types.GPUOffScreen(max_x, max_y)
     ghost_fb = gpu.types.GPUOffScreen(max_x, max_y)
@@ -112,110 +121,125 @@ def render_lens_flare(props: MasterProperties) -> (bgl.Buffer, int):
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE)
 
-    # first render ghosts one by one
-    for ghost in props.ghosts:
-        # calculate position
-        ghost_x = ((props.position_x - 0.5) * 2.0) * ghost.offset
-        ghost_y = ((props.position_y - 0.5) * 2.0) * ghost.offset
-        # add perpendicular offset
-        ghost_x += flare_vector_y * ghost.perpendicular_offset
-        ghost_y += -flare_vector_x * ghost.perpendicular_offset
+    for position in props.positions:
+        pos_x = position.manual_x
+        pos_y = position.manual_y
 
-        with ghost_fb.bind():
-            # black background
-            bgl.glClearColor(0.0, 0.0, 0.0, 1.0)
-            bgl.glClear(bgl.GL_COLOR_BUFFER_BIT)
-            bgl.glEnable(bgl.GL_BLEND)
-            bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE)
+        # set position from object
+        if position.variant == 'auto':
+            pos = bpy_extras.object_utils.world_to_camera_view(context.scene, context.scene.camera, position.auto_object.matrix_world.to_translation())
+            pos_x = pos[0]
+            pos_y = pos[1]
 
-            shaders.ghost.bind()
+        (flare_vector_x, flare_vector_y) = (pos_x - 0.5, pos_y - 0.5)
+        flare_vector_len = math.sqrt(pow(flare_vector_x, 2) + pow(flare_vector_y, 2) + 0.0001)
+        flare_vector_x /= flare_vector_len
+        flare_vector_y /= flare_vector_len
 
-            # transform matrix
-            model_matrix = Matrix.Translation((ghost_x, ghost_y, 0.0)) @ Matrix.Scale(ghost.size / 100, 4)
+        # first render ghosts one by one
+        for ghost in props.ghosts:
+            # calculate position
+            ghost_x = ((pos_x - 0.5) * 2.0) * ghost.offset
+            ghost_y = ((pos_y - 0.5) * 2.0) * ghost.offset
+            # add perpendicular offset
+            ghost_x += flare_vector_y * ghost.perpendicular_offset
+            ghost_y += -flare_vector_x * ghost.perpendicular_offset
 
-            ghost_uniforms = {
-                # move and scale ghosts
-                "modelMatrix": model_matrix,
-                # rotate ghost
-                "rotationMatrix": Matrix.Rotation(props.camera.rotation, 4, 'Z'),
-                # set color and intensity
-                "color": Vector((ghost.color[0], ghost.color[1], ghost.color[2], 1)),
-                # set centers
-                "empty": ghost.center_transparency,
-                # aspect ratio of destination image
-                "aspect_ratio": ratio,
-                # anamorphic lens simulation
-                "ratio": ghost.ratio,
-            }
+            with ghost_fb.bind():
+                # black background
+                bgl.glClearColor(0.0, 0.0, 0.0, 1.0)
+                bgl.glClear(bgl.GL_COLOR_BUFFER_BIT)
+                bgl.glEnable(bgl.GL_BLEND)
+                bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE)
 
-            set_float_uniforms(shaders.ghost, ghost_uniforms)
+                shaders.ghost.bind()
 
-            ghost_batch.draw(shaders.ghost)
-            draw_count += 1
+                # transform matrix
+                model_matrix = Matrix.Translation((ghost_x, ghost_y, 0.0)) @ Matrix.Scale(ghost.size / 100, 4)
 
+                ghost_uniforms = {
+                    # move and scale ghosts
+                    "modelMatrix": model_matrix,
+                    # rotate ghost
+                    "rotationMatrix": Matrix.Rotation(props.camera.rotation, 4, 'Z'),
+                    # set color and intensity
+                    "color": Vector((ghost.color[0], ghost.color[1], ghost.color[2], 1)),
+                    # set centers
+                    "empty": ghost.center_transparency,
+                    # aspect ratio of destination image
+                    "aspect_ratio": ratio,
+                    # anamorphic lens simulation
+                    "ratio": ghost.ratio,
+                }
+
+                set_float_uniforms(shaders.ghost, ghost_uniforms)
+
+                ghost_batch.draw(shaders.ghost)
+                draw_count += 1
+
+            with offscreen.bind():
+                # now copy to final buffer
+                bgl.glActiveTexture(bgl.GL_TEXTURE0)
+                bgl.glBindTexture(bgl.GL_TEXTURE_2D, ghost_fb.color_texture)
+
+                # disable wrapping
+                bgl.glTexParameterf(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_S, bgl.GL_CLAMP_TO_BORDER)
+                bgl.glTexParameterf(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_T, bgl.GL_CLAMP_TO_BORDER)
+
+                border_color = bgl.Buffer(bgl.GL_FLOAT, 4, [0.0, 0.0, 0.0, 1.0])
+
+                bgl.glTexParameterfv(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_BORDER_COLOR, border_color)
+
+                bgl.glActiveTexture(bgl.GL_TEXTURE2)
+                bgl.glBindTexture(bgl.GL_TEXTURE_2D, props.spectrum_image.bindcode)
+
+                bgl.glActiveTexture(bgl.GL_TEXTURE1)
+                bgl.glBindTexture(bgl.GL_TEXTURE_2D, noise_tex.to_list()[0])
+
+                shaders.copy.bind()
+
+                copy_int_uniforms = {
+                    "ghost": 0,
+                    "spectral": 2,
+                    "noise": 1,
+                    "samples": props.dispersion_samples,
+                }
+
+                set_int_uniforms(shaders.copy, copy_int_uniforms)
+
+                if ghost.dispersion_center == 'image':
+                    disperse_center = 0.0
+                else:
+                    disperse_center = 1.0
+
+                copy_float_uniforms = {
+                    "dispersion": ghost.dispersion,
+                    "spectrum_total": spectrum_total,
+                    "master_intensity": props.master_intensity,
+                    "intensity": ghost.intensity,
+                    "res": [props.resolution.resolution_x / 64, props.resolution.resolution_y / 64],
+                    "use_jitter": float(props.use_jitter),
+                    "disperse_from_ghost_center": disperse_center,
+                    "ghost_pos": [ghost_x, ghost_y]
+                }
+
+                set_float_uniforms(shaders.copy, copy_float_uniforms)
+
+                quad_batch.draw(shaders.copy)
+                draw_count += 1
+
+        # finally render flare on top
         with offscreen.bind():
-            # now copy to final buffer
             bgl.glActiveTexture(bgl.GL_TEXTURE0)
-            bgl.glBindTexture(bgl.GL_TEXTURE_2D, ghost_fb.color_texture)
-
-            # disable wrapping
-            bgl.glTexParameterf(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_S, bgl.GL_CLAMP_TO_BORDER)
-            bgl.glTexParameterf(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_T, bgl.GL_CLAMP_TO_BORDER)
-
-            border_color = bgl.Buffer(bgl.GL_FLOAT, 4, [0.0, 0.0, 0.0, 1.0])
-
-            bgl.glTexParameterfv(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_BORDER_COLOR, border_color)
-
-            bgl.glActiveTexture(bgl.GL_TEXTURE2)
-            bgl.glBindTexture(bgl.GL_TEXTURE_2D, props.spectrum_image.bindcode)
-
-            bgl.glActiveTexture(bgl.GL_TEXTURE1)
             bgl.glBindTexture(bgl.GL_TEXTURE_2D, noise_tex.to_list()[0])
 
-            shaders.copy.bind()
-
-            copy_int_uniforms = {
-                "ghost": 0,
-                "spectral": 2,
-                "noise": 1,
-                "samples": props.dispersion_samples,
-            }
-
-            set_int_uniforms(shaders.copy, copy_int_uniforms)
-
-            if ghost.dispersion_center == 'image':
-                disperse_center = 0.0
-            else:
-                disperse_center = 1.0
-
-            copy_float_uniforms = {
-                "dispersion": ghost.dispersion,
-                "spectrum_total": spectrum_total,
-                "master_intensity": props.master_intensity,
-                "intensity": ghost.intensity,
-                "res": [props.resolution.resolution_x / 64, props.resolution.resolution_y / 64],
-                "use_jitter": float(props.use_jitter),
-                "disperse_from_ghost_center": disperse_center,
-                "ghost_pos": [ghost_x, ghost_y]
-            }
-
-            set_float_uniforms(shaders.copy, copy_float_uniforms)
-
-            quad_batch.draw(shaders.copy)
+            render_flare(props, (pos_x, pos_y), shaders.flare, quad_batch)
             draw_count += 1
 
-    # finally render flare on top
-    with offscreen.bind():
-        bgl.glActiveTexture(bgl.GL_TEXTURE0)
-        bgl.glBindTexture(bgl.GL_TEXTURE_2D, noise_tex.to_list()[0])
-
-        render_flare(props, shaders.flare, quad_batch)
-        draw_count += 1
-
-        # copy rendered image to RAM
-        buffer = bgl.Buffer(bgl.GL_FLOAT, max_x * max_y * 4)
-        bgl.glReadBuffer(bgl.GL_BACK)
-        bgl.glReadPixels(0, 0, max_x, max_y, bgl.GL_RGBA, bgl.GL_FLOAT, buffer)
+            # copy rendered image to RAM
+            buffer = bgl.Buffer(bgl.GL_FLOAT, max_x * max_y * 4)
+            bgl.glReadBuffer(bgl.GL_BACK)
+            bgl.glReadPixels(0, 0, max_x, max_y, bgl.GL_RGBA, bgl.GL_FLOAT, buffer)
 
     bgl.glDeleteTextures(1, noise_tex)
 
@@ -225,13 +249,13 @@ def render_lens_flare(props: MasterProperties) -> (bgl.Buffer, int):
     return buffer, draw_count
 
 
-def render_flare(props: MasterProperties, flare_shader, flare_batch):
+def render_flare(props: MasterProperties, position, flare_shader, flare_batch):
     """
     Renders flare to active buffer
     """
     # render glare
     flare_color = Vector((props.flare.color[0], props.flare.color[1], props.flare.color[2], 1.0))
-    flare_position = Vector((props.position_x, props.position_y))
+    flare_position = Vector(position)
 
     blades = props.camera.blades
     if blades == 0:

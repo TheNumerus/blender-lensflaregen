@@ -1,5 +1,3 @@
-import bpy_extras
-
 import time
 import os
 
@@ -48,6 +46,51 @@ class RemoveGhostOperator(bpy.types.Operator):
             props.selected_ghost = props.selected_ghost - 1
 
         props.ghosts.remove(self.remove_id)
+
+        return {'FINISHED'}
+
+
+class AddPositionOperator(bpy.types.Operator):
+    bl_label = "Create new position"
+    bl_idname = "lens_flare.add_position"
+    bl_description = "Creates new position"
+
+    def execute(self, context):
+        props: MasterProperties = context.scene.lens_flare_props
+
+        props.positions.add()
+
+        return {'FINISHED'}
+
+
+class RemovePositionOperator(bpy.types.Operator):
+    bl_label = "Delete position"
+    bl_idname = "lens_flare.remove_position"
+    bl_description = "Removes position"
+
+    remove_id: bpy.props.IntProperty(default=-1, description="Index of position to remove")
+
+    @classmethod
+    def poll(cls, context):
+        props: MasterProperties = context.scene.lens_flare_props
+
+        if len(props.positions) == 0:
+            return False
+
+        return True
+
+    def execute(self, context):
+        props: MasterProperties = context.scene.lens_flare_props
+
+        if self.remove_id == -1:
+            self.report({'ERROR_INVALID_INPUT'}, "Invalid ID of position to delete")
+            return {'CANCELLED'}
+
+        # move active selector
+        if len(props.positions) != 1 and props.active_object == (len(props.positions) - 1):
+            props.active_object = props.active_object - 1
+
+        props.positions.remove(self.remove_id)
 
         return {'FINISHED'}
 
@@ -111,13 +154,6 @@ class OGLRenderOperator(bpy.types.Operator):
 
         start_time = time.perf_counter()
 
-        # set position from object
-        if props.position_object is not None:
-            camera = context.scene.camera
-            pos = bpy_extras.object_utils.world_to_camera_view(context.scene, context.scene.camera, props.position_object.matrix_world.to_translation())
-            props.position_x = pos[0]
-            props.position_y = pos[1]
-
         # set values from camera
         if not props.camera.use_override:
             camera = context.scene.camera
@@ -137,9 +173,9 @@ class OGLRenderOperator(bpy.types.Operator):
         props.spectrum_image.gl_load()
 
         if props.debug_pos:
-            buffer, draw_calls = ogl.render_debug_cross(props)
+            buffer, draw_calls = ogl.render_debug_cross(context, props)
         else:
-            buffer, draw_calls = ogl.render_lens_flare(props)
+            buffer, draw_calls = ogl.render_lens_flare(context, props)
 
         props.image.scale(props.resolution.resolution_x, props.resolution.resolution_y)
         props.image.pixels.foreach_set(buffer)

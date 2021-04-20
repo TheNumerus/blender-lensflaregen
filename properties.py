@@ -203,25 +203,49 @@ class ResolutionProperties(bpy.types.PropertyGroup):
     )
 
 
-class MasterProperties(bpy.types.PropertyGroup):
-    position_x: FloatProperty(
+class PositionProperties(bpy.types.PropertyGroup):
+    name: StringProperty(
+        name="Name",
+        description="Position Name",
+        default="New Position",
+    )
+    variant: EnumProperty(
+        items=[("auto", "Automatic", "Flare position will be determined from object position"),
+            ("manual", "Manual", "Flare position will be set manualy")],
+        name="Position Variant",
+        description="Sets center of flare effect",
+        default="auto",
+    )
+    manual_x: FloatProperty(
         name="X",
         description="Position of light source on X axis",
         default=0.5,
         soft_min=0.0,
         soft_max=1.0,
     )
-    position_y: FloatProperty(
+    manual_y: FloatProperty(
         name="Y",
         description="Position of light source on X axis",
         default=0.5,
         soft_min=0.0,
         soft_max=1.0,
     )
-    position_object: PointerProperty(
+    auto_object: PointerProperty(
         name="Position Object",
         description="Use this object as position",
-        type=bpy.types.Object
+        type=bpy.types.Object,
+    )
+
+
+class MasterProperties(bpy.types.PropertyGroup):
+    positions: CollectionProperty(
+        name="Position Settings",
+        description="Sets position settings",
+        type=PositionProperties,
+    )
+    active_object: IntProperty(
+        name="Active Position Object",
+        min=0,
     )
     image: PointerProperty(
         name="Image",
