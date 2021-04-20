@@ -51,7 +51,6 @@ class PositionPanel(bpy.types.Panel):
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
     bl_category = 'Lens Flares'
-    bl_parent_id = "LF_PT_MainSettings"
 
     def draw(self, context):
         layout = self.layout
@@ -94,7 +93,6 @@ class ResolutionPanel(bpy.types.Panel):
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
     bl_category = 'Lens Flares'
-    bl_parent_id = "LF_PT_MainSettings"
     bl_options = {'DEFAULT_CLOSED'}
 
     def draw_header(self, context):
@@ -119,7 +117,6 @@ class FlareSettingsPanel(bpy.types.Panel):
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
     bl_category = 'Lens Flares'
-    bl_parent_id = "LF_PT_MainSettings"
 
     def draw(self, context):
         layout = self.layout
@@ -158,7 +155,6 @@ class GhostsPanel(bpy.types.Panel):
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
     bl_category = 'Lens Flares'
-    bl_parent_id = "LF_PT_MainSettings"
 
     active_index = 0
 
@@ -222,7 +218,6 @@ class CameraOverridePanel(bpy.types.Panel):
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
     bl_category = 'Lens Flares'
-    bl_parent_id = "LF_PT_MainSettings"
     bl_options = {'DEFAULT_CLOSED'}
 
     def draw_header(self, context):
@@ -248,7 +243,6 @@ class MiscPanel(bpy.types.Panel):
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
     bl_category = 'Lens Flares'
-    bl_parent_id = "LF_PT_MainSettings"
     bl_options = {'DEFAULT_CLOSED'}
 
     def draw(self, context):
