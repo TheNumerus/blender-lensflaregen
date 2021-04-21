@@ -39,10 +39,10 @@ class PositionsUiList(bpy.types.UIList):
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_property, index=0, flt_flag=0):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            layout.label(text=item.name)
+            layout.label(text=item.name, icon='LIGHT_SUN')
         else:
             layout.alignment = 'CENTER'
-            layout.label(text="")
+            layout.label(text="", icon='LIGHT_SUN')
 
 
 class PositionPanel(bpy.types.Panel):
