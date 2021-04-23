@@ -99,7 +99,7 @@ def render_lens_flare(context, props: MasterProperties) -> (bgl.Buffer, int):
         pos = Vector((position.manual_x, position.manual_y))
 
         # set position from object
-        if position.variant == 'auto':
+        if position.variant == 'auto' and position.auto_object is not None:
             world_pos = position.auto_object.matrix_world.to_translation()
             pos = bpy_extras.object_utils.world_to_camera_view(context.scene, context.scene.camera, world_pos)
 

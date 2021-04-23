@@ -55,7 +55,7 @@ void main() {
 
     if (anamorphic > 0.5) {
         float anam_ring = (noise_ring) * 0.2;
-        float anam_flare = (gauss(dist, 0.0, size / 200.0) + anam_ring) + gauss(dist, 0.0, size / 2000.0) * intensity;
+        float anam_flare = ((gauss(dist, 0.0, size / 200.0) + anam_ring) + gauss(dist, 0.0, size / 2000.0)) * intensity;
 
         float ray_distort = (1.0 - pow(anam_flare, 1.0) * 0.2);
         float ray_fade = max(1.0 - abs(0.4 * flare_base.x), 0.0);

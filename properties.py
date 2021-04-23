@@ -263,7 +263,8 @@ class MasterProperties(bpy.types.PropertyGroup):
         name="Dispersion Samples",
         description="Sets the quality of dispersion effect",
         default=16,
-        min=8,
+        min=1,
+        max=1024,
     )
     # prop groups
     flare: PointerProperty(
