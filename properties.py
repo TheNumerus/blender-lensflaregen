@@ -32,7 +32,7 @@ class GhostProperties(bpy.types.PropertyGroup):
     )
     perpendicular_offset: FloatProperty(
         name="Offset",
-        description="Ghost offsetfrom the main axis",
+        description="Ghost offset from the main axis",
         default=0.0,
         soft_min=-1.0,
         soft_max=1.0,
