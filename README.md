@@ -1,7 +1,7 @@
 # Blender Lens Flare Generator
 Blender addon for rendering lens-flare effects.  
 Uses OpenGL from Blender API.  
-Supports versions 2.91 and newer. 
+Supports versions 2.83 and newer. 
 
 ## Features
 - Customizable flare and ghost rendering
