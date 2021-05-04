@@ -38,7 +38,7 @@ def render_debug_cross(context, props: MasterProperties) -> (bgl.Buffer, int):
             pos = Vector((position.manual_x, position.manual_y))
 
             # set position from object
-            if position.variant == 'auto':
+            if position.variant == 'auto' and position.auto_object is not None:
                 world_pos = position.auto_object.matrix_world.to_translation()
                 pos = bpy_extras.object_utils.world_to_camera_view(context.scene, context.scene.camera, world_pos)
 
@@ -82,8 +82,6 @@ def render_lens_flare(context, props: MasterProperties) -> (bgl.Buffer, int):
     quad_batch = batch_quad(shaders.flare)
 
     draw_count = 0
-
-    spectrum_total = integrate_spectrum(props.spectrum_image)
 
     noise_tex = NoiseTexture()
 
@@ -138,7 +136,7 @@ def render_lens_flare(context, props: MasterProperties) -> (bgl.Buffer, int):
                 bgl.glActiveTexture(bgl.GL_TEXTURE1)
                 bgl.glBindTexture(bgl.GL_TEXTURE_2D, noise_tex.gl_code)
 
-                copy_ghost(shaders.copy, quad_batch, ghost, props, Vector((ghost_x, ghost_y)), spectrum_total)
+                copy_ghost(shaders.copy, quad_batch, ghost, props, Vector((ghost_x, ghost_y)))
                 draw_count += 1
 
         # finally render flare on top
@@ -245,7 +243,7 @@ def render_ghost(props: MasterProperties, ghost, ghost_shader, ghost_batch, flar
     ghost_batch.draw(ghost_shader)
 
 
-def copy_ghost(copy_shader, quad_batch, ghost, props, ghost_pos, spectrum_total):
+def copy_ghost(copy_shader, quad_batch, ghost, props, ghost_pos):
     copy_shader.bind()
 
     copy_int_uniforms = {
@@ -264,7 +262,6 @@ def copy_ghost(copy_shader, quad_batch, ghost, props, ghost_pos, spectrum_total)
 
     copy_float_uniforms = {
         "dispersion": ghost.dispersion,
-        "spectrum_total": spectrum_total,
         "master_intensity": props.master_intensity,
         "intensity": ghost.intensity,
         "res": [props.resolution.resolution_x / 64, props.resolution.resolution_y / 64],
@@ -318,23 +315,6 @@ def set_int_uniforms(shader: gpu.types.GPUShader, uniforms: Dict[str, Any]):
     """
     for name, uniform in uniforms.items():
         shader.uniform_int(name, uniform)
-
-
-def integrate_spectrum(image: bpy.types.Image) -> Vector:
-    """
-    Computes total brightness of ghost based on spectrum image
-    :returns: total brightness vector
-    """
-    i = Vector((0.0, 0.0, 0.0))
-    for x in range(image.size[0]):
-        r = image.pixels[x * 4]
-        g = image.pixels[x * 4 + 1]
-        b = image.pixels[x * 4 + 2]
-        i.x += r
-        i.y += g
-        i.z += b
-    i /= image.size[0]
-    return i
 
 
 class NoiseTexture:

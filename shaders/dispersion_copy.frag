@@ -3,7 +3,6 @@ uniform sampler2D spectral;
 uniform sampler2D noise;
 uniform float dispersion;
 uniform int samples;
-uniform vec3 spectrum_total;
 uniform float master_intensity;
 uniform float intensity;
 uniform vec2 res;
@@ -28,12 +27,6 @@ vec2 uv_scaled(vec2 uv, float scale) {
 }
 
 void main() {
-    if (abs(dispersion) < 0.001) {
-        // use precalculated spetrum integral for total brightness
-        FragColor = vec4(texture(ghost, uvInterp).rgb * spectrum_total * intensity * master_intensity, 1.0);
-        return;
-    }
-
     vec3 color = vec3(0.0);
     for (int i = 0; i < samples; ++i) {
         float x = (float(i) + texture(noise, uvInterp * res).r * use_jitter) / float(samples);
