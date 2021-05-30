@@ -1,3 +1,11 @@
+## Version 0.4
+- distortion rendering
+- dispersion from ghost center option
+- resolution scaler support
+- multiple effects in one image
+- automatic effect position from object location
+- ui tweaks, bug fixes
+
 ## Version 0.3
 - another property refactor
 - dispersion rendering

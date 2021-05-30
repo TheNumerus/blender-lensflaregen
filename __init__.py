@@ -1,13 +1,13 @@
 bl_info = {
     "name": "Lens Flare Generator",
     "description": "Generates lens flare effect",
-    "blender": (2, 92, 0),
+    "blender": (2, 83, 0),
     "category": "Render",
     "author": "Petr Volf",
     "location": "Compositor > Lens Flares",
     "wiki_url": "https://github.com/TheNumerus/blender-lensflaregen/wiki",
     "tracker_url": "https://github.com/TheNumerus/blender-lensflaregen/issues",
-    "version": (0, 3, 0),
+    "version": (0, 4, 0),
 }
 
 
