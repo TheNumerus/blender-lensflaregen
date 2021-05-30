@@ -132,6 +132,7 @@ class DuplicateGhostOperator(bpy.types.Operator):
         new_ghost.dispersion_center = props.ghosts[self.duplicate_id].dispersion_center
         new_ghost.dispersion = props.ghosts[self.duplicate_id].dispersion
         new_ghost.ratio = props.ghosts[self.duplicate_id].ratio
+        new_ghost.distortion = props.ghosts[self.duplicate_id].distortion
 
         return {'FINISHED'}
 

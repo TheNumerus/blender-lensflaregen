@@ -2,6 +2,7 @@ uniform sampler2D ghost;
 uniform sampler2D spectral;
 uniform sampler2D noise;
 uniform float dispersion;
+uniform float distortion;
 uniform int samples;
 uniform float master_intensity;
 uniform float intensity;
@@ -26,6 +27,11 @@ vec2 uv_scaled(vec2 uv, float scale) {
     return scaled + 0.5;
 }
 
+vec2 distortion_vector() {
+    vec2 moved = uvInterp - 0.5;
+    return ( pow(moved.x, 2.0) + pow(moved.y, 2.0) ) * moved * -distortion;
+}
+
 void main() {
     vec3 color = vec3(0.0);
     for (int i = 0; i < samples; ++i) {
@@ -34,7 +40,7 @@ void main() {
 
         float sample_dispersion = (x - 0.5) * 2.0 * (dispersion) + 1.0;
 
-        vec4 ghost_color = texture(ghost, uv_scaled(uvInterp, sample_dispersion));
+        vec4 ghost_color = texture(ghost, uv_scaled(uvInterp + distortion_vector(), sample_dispersion));
 
         color += ghost_color.rgb * spectral_tex.rgb;
     }

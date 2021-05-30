@@ -262,6 +262,7 @@ def copy_ghost(copy_shader, quad_batch, ghost, props, ghost_pos):
 
     copy_float_uniforms = {
         "dispersion": ghost.dispersion,
+        "distortion": ghost.distortion,
         "master_intensity": props.master_intensity,
         "intensity": ghost.intensity,
         "res": [props.resolution.resolution_x / 64, props.resolution.resolution_y / 64],

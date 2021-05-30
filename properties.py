@@ -95,6 +95,13 @@ class GhostProperties(bpy.types.PropertyGroup):
         soft_min=0.5,
         soft_max=2.0,
     )
+    distortion: FloatProperty(
+        name="Ghost distortion",
+        description="Intensity of ghost distortion (0.0 is no dispersion)",
+        default=0.0,
+        min=0.0,
+        max=1.0,
+    )
 
 
 class FlareProperties(bpy.types.PropertyGroup):
